@@ -1,4 +1,51 @@
-.next-prayer-label {
+.next-prayer-box {
+    spacing: 6px;
+}
+
+.next-prayer-icon {
+    icon-size: 16px;
+}
+
+.next-prayer-name {
     font-weight: bold;
+}
+
+.next-prayer-time {
+    font-weight: normal;
+    margin-left: 2px;
+}
+
+.next-prayer-countdown {
+    font-weight: normal;
     font-size: 0.9em;
+    color: #aaa;
+    margin-left: 2px;
+}
+
+.next-prayer-mosque-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    text-align: center;
+}
+
+.next-prayer-menu-time {
+    font-weight: bold;
+    margin-left: auto;
+    padding-left: 24px;
+}
+
+.next-prayer-menu-active {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.next-prayer-menu-active .next-prayer-menu-time {
+    color: #78aeed;
+}
+
+.next-prayer-menu-past {
+    color: #888;
+}
+
+.next-prayer-menu-past .next-prayer-menu-time {
+    color: #888;
 }
