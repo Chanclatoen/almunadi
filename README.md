@@ -4,6 +4,7 @@ Display the next Islamic prayer time in your desktop's top bar/menu bar, powered
 
 ![GNOME 50](https://img.shields.io/badge/GNOME-50-blue)
 ![macOS 14+](https://img.shields.io/badge/macOS-14+-black)
+![Windows 10+](https://img.shields.io/badge/Windows-10+-0078D6)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
 ## Features
@@ -25,6 +26,10 @@ See [GNOME installation instructions](#gnome-installation) below.
 ### macOS (Native Menu Bar App)
 
 See [NextPrayerMac/README.md](NextPrayerMac/README.md) for build instructions. Requires macOS 14+ and Xcode 15+.
+
+### Windows (System Tray App)
+
+See [NextPrayerWindows/README.md](NextPrayerWindows/README.md). Python-based, runs in the system tray with toast notifications. Can be packaged as a standalone `.exe` with PyInstaller.
 
 ## GNOME Installation
 
