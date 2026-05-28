@@ -1,2 +1,12 @@
 schemas/gschemas.compiled
 *.zip
+
+# macOS
+.DS_Store
+
+# Xcode / NextPrayerMac
+NextPrayerMac/build/
+NextPrayerMac/dist/
+NextPrayerMac/DerivedData/
+*.xcuserstate
+xcuserdata/

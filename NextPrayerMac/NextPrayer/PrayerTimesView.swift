@@ -84,7 +84,7 @@ struct PrayerRow: View {
     var body: some View {
         HStack {
             Image(systemName: prayer.icon)
-                .foregroundStyle(isNext ? .blue : isPast ? .tertiary : .secondary)
+                .foregroundStyle(isNext ? AnyShapeStyle(.blue) : isPast ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
                 .frame(width: 20)
 
             Text(prayer.name.rawValue)
@@ -103,7 +103,7 @@ struct PrayerRow: View {
             Text(prayer.time)
                 .monospacedDigit()
                 .fontWeight(isNext ? .semibold : .regular)
-                .foregroundStyle(isNext ? .blue : isPast ? .tertiary : .primary)
+                .foregroundStyle(isNext ? AnyShapeStyle(.blue) : isPast ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
