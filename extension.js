@@ -23,8 +23,7 @@ export default class NextPrayerExtension extends Extension {
     _shuruq = null;
     _mosqueName = null;
     _settingsChangedId = null;
-    _notifiedPrayers = new Set();
-    _notificationSource = null;
+    _notificationTimers = [];
 
     enable() {
         this._settings = this.getSettings();
@@ -64,13 +63,13 @@ export default class NextPrayerExtension extends Extension {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;
         }
+        this._clearNotificationTimers();
         this._indicator?.destroy();
         this._indicator = null;
         this._label = null;
         this._session = null;
         this._settings = null;
         this._times = null;
-        this._notifiedPrayers.clear();
     }
 
     _buildMenu() {
@@ -105,7 +104,7 @@ export default class NextPrayerExtension extends Extension {
         if (this._updateTimer)
             GLib.source_remove(this._updateTimer);
 
-        this._updateTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, () => {
+        this._updateTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60, () => {
             this._updateLabel();
             return GLib.SOURCE_CONTINUE;
         });
@@ -150,7 +149,7 @@ export default class NextPrayerExtension extends Extension {
 
                 const html = new TextDecoder().decode(bytes.get_data());
                 this._parseConfData(html);
-                this._notifiedPrayers.clear();
+                this._scheduleNotifications();
                 this._updateLabel();
                 this._updateMenu();
                 this._scheduleDailyRefresh();
@@ -204,8 +203,6 @@ export default class NextPrayerExtension extends Extension {
         const now = GLib.DateTime.new_now_local();
         const nowMinutes = now.get_hour() * 60 + now.get_minute();
 
-        this._checkNotifications(nowMinutes);
-
         let nextIdx = -1;
         let nextMinutes = -1;
 
@@ -233,20 +230,33 @@ export default class NextPrayerExtension extends Extension {
         }
     }
 
-    _checkNotifications(nowMinutes) {
+    _clearNotificationTimers() {
+        for (const id of this._notificationTimers)
+            GLib.source_remove(id);
+        this._notificationTimers = [];
+    }
+
+    _scheduleNotifications() {
+        this._clearNotificationTimers();
         if (!this._times) return;
 
-        for (let i = 0; i < this._times.length; i++) {
-            const prayerMinutes = this._toMinutes(this._times[i]);
-            if (nowMinutes >= prayerMinutes && nowMinutes < prayerMinutes + 2
-                && !this._notifiedPrayers.has(i)) {
-                this._notifiedPrayers.add(i);
-                this._sendNotification(PRAYER_NAMES[i], this._times[i]);
-            }
-        }
+        const now = GLib.DateTime.new_now_local();
+        const nowSeconds = now.get_hour() * 3600 + now.get_minute() * 60 + now.get_second();
 
-        if (nowMinutes === 0)
-            this._notifiedPrayers.clear();
+        for (let i = 0; i < this._times.length; i++) {
+            const prayerSeconds = this._toMinutes(this._times[i]) * 60;
+            const delay = prayerSeconds - nowSeconds;
+            if (delay <= 0) continue;
+
+            const name = PRAYER_NAMES[i];
+            const time = this._times[i];
+            const id = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
+                this._sendNotification(name, time);
+                this._updateLabel();
+                return GLib.SOURCE_REMOVE;
+            });
+            this._notificationTimers.push(id);
+        }
     }
 
     _sendNotification(prayerName, time) {
