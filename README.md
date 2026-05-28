@@ -1,26 +1,32 @@
-# Next Prayer (Mawaqit) - GNOME Shell Extension
+# Next Prayer (Mawaqit)
 
-A GNOME Shell extension that displays the next Islamic prayer time in your top bar, powered by [Mawaqit](https://mawaqit.net).
+Display the next Islamic prayer time in your desktop's top bar/menu bar, powered by [Mawaqit](https://mawaqit.net).
 
 ![GNOME 50](https://img.shields.io/badge/GNOME-50-blue)
+![macOS 14+](https://img.shields.io/badge/macOS-14+-black)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 
 ## Features
 
-- Shows the next prayer name, time, and countdown in the GNOME top bar
+- Next prayer name, time, and countdown in the top bar
+- Contextual icons per prayer (sunrise, sun, sunset, moon)
 - Click to see all 5 daily prayer times + Shuruq
 - Desktop notifications when each prayer time arrives
-- Fetches times directly from your mosque's Mawaqit page
-- Configurable via GNOME Extensions preferences
+- Fetches times directly from your mosque's Mawaqit page — no account needed
+- Configurable mosque URL
 - Refreshes automatically every day
 
-## Screenshot
+## Platforms
 
-Top bar display: `Maghrib  21:47  (-2h15)`
+### Linux (GNOME Shell Extension)
 
-Dropdown menu shows all prayer times for the day.
+See [GNOME installation instructions](#gnome-installation) below.
 
-## Installation
+### macOS (Native Menu Bar App)
+
+See [NextPrayerMac/README.md](NextPrayerMac/README.md) for build instructions. Requires macOS 14+ and Xcode 15+.
+
+## GNOME Installation
 
 ### From source
 
@@ -45,22 +51,17 @@ gnome-extensions enable next-prayer@mawaqit
 
 ## Configuration
 
-1. Open GNOME Extensions app (or run `gnome-extensions prefs next-prayer@mawaqit`)
+1. Open extension preferences (GNOME) or Settings (macOS)
 2. Paste your mosque's Mawaqit URL (e.g. `https://mawaqit.net/en/w/your-mosque-slug`)
-3. The extension will immediately fetch and display prayer times
+3. Prayer times load immediately
 
 To find your mosque's URL, go to [mawaqit.net](https://mawaqit.net), search for your mosque, and copy the URL from your browser.
 
-## Requirements
-
-- GNOME Shell 50
-- libsoup3 (included with GNOME)
-
 ## How it works
 
-The extension fetches the public Mawaqit page for your configured mosque and extracts the embedded prayer time data (`confData`). No Mawaqit account or API key is needed.
+The app fetches the public Mawaqit page for your configured mosque and extracts the embedded prayer time data (`confData`). No Mawaqit account or API key is needed.
 
-Times are refreshed once per day (around midnight) and the top bar label updates every 30 seconds.
+Times are refreshed once per day (around midnight). Notifications are scheduled to fire at the exact second each prayer time arrives.
 
 ## License
 
