@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.next-prayer" path="/org/gnome/shell/extensions/next-prayer/">
+    <key name="mosque-url" type="s">
+      <default>''</default>
+      <summary>Mawaqit mosque URL</summary>
+      <description>Full Mawaqit URL for your mosque (e.g. https://mawaqit.net/en/w/arrahmaan-dordrecht)</description>
+    </key>
+  </schema>
+</schemalist>
