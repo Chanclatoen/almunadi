@@ -75,8 +75,8 @@ Settings are stored in macOS `UserDefaults` (standard for native apps). Cached p
 Pushing a repository `v*` release tag triggers the [macOS Release](../.github/workflows/macos-release.yml) GitHub Actions workflow, which builds the app and attaches the zip to the GitHub Release:
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 You can also run the workflow manually from the Actions tab.

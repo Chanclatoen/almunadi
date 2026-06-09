@@ -110,10 +110,12 @@ Times refresh once per day (around midnight). Notifications are scheduled with p
 
 ## Releasing
 
-A single version tag triggers all 4 platform builds, and all artifacts are attached to one GitHub Release:
+Pushing application code to `main` automatically bumps the patch version, commits the version files, creates a `vX.Y.Z` tag, and dispatches all 4 platform release builds. Documentation, workflow, and script-only changes are ignored by the automatic release workflow.
+
+A single version tag still triggers all 4 platform builds, so manual releases can also be created with:
 
 ```bash
-git tag v1.0.1 && git push origin v1.0.1
+git tag vX.Y.Z && git push origin vX.Y.Z
 ```
 
 This creates a release with:
