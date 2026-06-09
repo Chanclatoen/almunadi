@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 import requests
 
 APP_NAME = "Al Munadi"
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 TAG_PREFIX = "v"
 RELEASES_URL = "https://api.github.com/repos/Chanclatoen/almunadi/releases"
 REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/almunadi/releases"
