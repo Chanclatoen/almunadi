@@ -20,7 +20,7 @@
       {"now_minutes": 720, "expected": 1, "description": "noon, before Dhuhr"},
       {"now_minutes": 750, "expected": 2, "description": "exactly at Dhuhr"},
       {"now_minutes": 1000, "expected": 3, "description": "between Asr and Maghrib"},
-      {"now_minutes": 1350, "expected": 4, "description": "before Isha"},
+      {"now_minutes": 1290, "expected": 4, "description": "before Isha"},
       {"now_minutes": 1400, "expected": -1, "description": "after all prayers"}
     ]
   },
@@ -77,7 +77,7 @@
   "next_prayer_with_offsets": {
     "times": ["05:35", "12:20", "16:00", "20:45", "21:55"],
     "cases": [
-      {"now_minutes": 1400, "expected": 4, "description": "before adjusted Isha"},
+      {"now_minutes": 1300, "expected": 4, "description": "before adjusted Isha"},
       {"now_minutes": 1320, "expected": -1, "description": "after adjusted Isha rolls to Fajr"}
     ]
   },
