@@ -13,9 +13,12 @@ class PrayerService: ObservableObject {
     @Published var shuruq: String?
     @Published var mosqueName: String = ""
     @Published var nextPrayer: PrayerTime?
+    @Published var lastPrayer: PrayerTime?
     @Published var lastError: String?
     @Published var isCached: Bool = false
     @Published var jumua2: String?
+    @Published var hijriDate: String?
+    @Published var qiblaDirection: String?
     @Published var searchResults: [MosqueSearchResult] = []
     @Published var isSearching: Bool = false
     @Published var savedMosques: [SavedMosque] = []
@@ -27,6 +30,13 @@ class PrayerService: ObservableObject {
     private var updateCheckTimer: Timer?
     private let calendar = Calendar.current
     private static let apiBase = "https://mawaqit.net/api/2.0/mosque"
+    private static let kaabaLatitude = 21.422487
+    private static let kaabaLongitude = 39.826206
+    private static let hijriMonths = [
+        "Muharram", "Safar", "Rabi al-awwal", "Rabi al-thani",
+        "Jumada al-awwal", "Jumada al-thani", "Rajab", "Shaban",
+        "Ramadan", "Shawwal", "Dhu al-Qadah", "Dhu al-Hijjah",
+    ]
     private var audioPlayer: AVAudioPlayer?
     private var cachedMawaqitData: MawaqitData?
 
@@ -351,6 +361,9 @@ class PrayerService: ObservableObject {
                 let iqamaEnabled = mosque["iqamaEnabled"] as? Bool ?? false
                 let jumua = mosque["jumua"] as? String
                 let jumua2 = mosque["jumua2"] as? String
+                let latitude = mosque["latitude"] as? Double
+                let longitude = mosque["longitude"] as? Double
+                let hijriAdjustment = mosque["hijriAdjustment"] as? Int ?? 0
 
                 let mawaqitData = MawaqitData(
                     times: times,
@@ -359,7 +372,9 @@ class PrayerService: ObservableObject {
                     iqama: iqama,
                     iqamaEnabled: iqamaEnabled,
                     jumua: jumua,
-                    jumua2: jumua2
+                    jumua2: jumua2,
+                    hijriDate: Self.formatHijriDate(adjustment: hijriAdjustment),
+                    qiblaDirection: Self.formatQiblaDirection(latitude: latitude, longitude: longitude)
                 )
                 self.applyData(mawaqitData)
                 self.scheduleDailyRefresh()
@@ -478,8 +493,57 @@ class PrayerService: ObservableObject {
 
         let shuruq = json["shuruq"] as? String
         let name = (json["name"] as? String) ?? (json["label"] as? String) ?? ""
+        let latitude = json["latitude"] as? Double
+        let longitude = json["longitude"] as? Double
+        let hijriAdjustment = json["hijriAdjustment"] as? Int ?? 0
 
-        return MawaqitData(times: times, shuruq: shuruq, mosqueName: name)
+        return MawaqitData(
+            times: times,
+            shuruq: shuruq,
+            mosqueName: name,
+            iqama: json["iqama"] as? [String],
+            iqamaEnabled: json["iqamaEnabled"] as? Bool,
+            jumua: json["jumua"] as? String,
+            jumua2: json["jumua2"] as? String,
+            hijriDate: Self.formatHijriDate(adjustment: hijriAdjustment),
+            qiblaDirection: Self.formatQiblaDirection(latitude: latitude, longitude: longitude)
+        )
+    }
+
+    private static func formatQiblaDirection(latitude: Double?, longitude: Double?) -> String? {
+        guard let latitude, let longitude else { return nil }
+        let lat1 = latitude * .pi / 180
+        let lat2 = kaabaLatitude * .pi / 180
+        let deltaLon = (kaabaLongitude - longitude) * .pi / 180
+        let y = sin(deltaLon)
+        let x = cos(lat1) * tan(lat2) - sin(lat1) * cos(deltaLon)
+        let bearing = Int(round((atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)))
+        return "\(bearing)°"
+    }
+
+    private static func gregorianToJdn(year: Int, month: Int, day: Int) -> Int {
+        let a = (14 - month) / 12
+        let y = year + 4800 - a
+        let m = month + 12 * a - 3
+        return day + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045
+    }
+
+    private static func islamicToJdn(year: Int, month: Int, day: Int) -> Int {
+        day + Int(ceil(29.5 * Double(month - 1))) + (year - 1) * 354
+            + Int(floor(Double(3 + 11 * year) / 30.0)) + 1948439 - 1
+    }
+
+    private static func formatHijriDate(adjustment: Int = 0) -> String {
+        let components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        let jdn = gregorianToJdn(
+            year: components.year ?? 2026,
+            month: components.month ?? 1,
+            day: components.day ?? 1
+        ) + adjustment
+        let year = Int(floor(Double(30 * (jdn - 1948439) + 10646) / 10631.0))
+        let month = min(12, Int(ceil(Double(jdn - (29 + islamicToJdn(year: year, month: 1, day: 1))) / 29.5)) + 1)
+        let day = jdn - islamicToJdn(year: year, month: month, day: 1) + 1
+        return "\(day) \(hijriMonths[month - 1]) \(year) AH"
     }
 
     private func resolveIqama(prayerTime: String, iqamaValue: String?) -> String? {
@@ -571,6 +635,8 @@ class PrayerService: ObservableObject {
         shuruq = data.shuruq
         mosqueName = data.mosqueName
         jumua2 = (showJumuah ? data.jumua2 : nil)
+        hijriDate = data.hijriDate
+        qiblaDirection = data.qiblaDirection
 
         if !fromCache {
             isCached = false
@@ -603,6 +669,20 @@ class PrayerService: ObservableObject {
 
     private func updateNextPrayer() {
         let now = Date()
+        if let last = prayers.last(where: { $0.date <= now }) {
+            lastPrayer = last
+        } else if let last = prayers.last,
+                  let yesterday = calendar.date(byAdding: .day, value: -1, to: last.date) {
+            lastPrayer = PrayerTime(
+                id: last.name,
+                name: last.name,
+                time: last.time,
+                date: yesterday,
+                displayName: last.displayName,
+                iqamaTime: last.iqamaTime,
+                notificationKey: last.notificationKey
+            )
+        }
         if let next = prayers.first(where: { $0.date > now }) {
             nextPrayer = next
         } else if let first = prayers.first {

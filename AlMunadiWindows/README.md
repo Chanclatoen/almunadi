@@ -26,7 +26,7 @@ python al_munadi.py
 
 ```bash
 pip install -r requirements.txt pyinstaller
-pyinstaller --onefile --noconsole --name AlMunadi al_munadi.py
+pyinstaller --onefile --noconsole --paths .. --name AlMunadi al_munadi.py
 ```
 
 The executable will be in `dist/AlMunadi.exe`.

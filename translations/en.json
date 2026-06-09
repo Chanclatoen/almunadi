@@ -47,6 +47,7 @@
   "display_mode_name": "Name only",
   "display_mode_compact": "Compact",
   "display_mode_icon": "Icon only",
+  "display_mode_since": "Since last prayer",
   "countdown_format": "Countdown format",
   "countdown_compact": "Compact",
   "countdown_full": "Full",
@@ -63,5 +64,8 @@
   "paste_url": "Or Paste URL Directly",
   "paste_url_hint": "Go to mawaqit.net, find your mosque, and paste the URL",
   "connected_mosque": "Connected Mosque",
+  "hijri_date": "Hijri date",
+  "qibla": "Qibla",
+  "since_last_prayer": "Since {name}",
   "help": "Help"
 }

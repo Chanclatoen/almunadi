@@ -42,25 +42,20 @@ struct PrayerTime: Identifiable {
     var icon: String { name.icon }
 
     func menuBarText(displayMode: String, countdownFormat: String) -> String {
-        let remaining = Int(date.timeIntervalSinceNow / 60)
+        let interval = date.timeIntervalSinceNow
+        let remaining = Int(interval / 60)
+        let elapsed = Int(-interval / 60)
+        if displayMode == "since" {
+            let value = Self.formatDuration(minutes: max(0, elapsed), prefix: "+", countdownFormat: countdownFormat)
+            return "\(String(format: t("since_last_prayer"), displayName)) \(value)"
+        }
         if remaining <= 0 {
             if displayMode == "icon" { return "" }
             if displayMode == "name" { return displayName }
             return "\(displayName) \(t("now"))"
         }
 
-        let h = remaining / 60
-        let m = remaining % 60
-        let countdown: String
-        if h > 0 {
-            if countdownFormat == "full" {
-                countdown = "-\(h)h \(String(format: "%02d", m))m"
-            } else {
-                countdown = "-\(h)h\(String(format: "%02d", m))m"
-            }
-        } else {
-            countdown = "-\(m)m"
-        }
+        let countdown = Self.formatDuration(minutes: remaining, prefix: "-", countdownFormat: countdownFormat)
 
         switch displayMode {
         case "time":
@@ -75,6 +70,18 @@ struct PrayerTime: Identifiable {
             return "\(displayName) \(time) \(countdown)"
         }
     }
+
+    private static func formatDuration(minutes: Int, prefix: String, countdownFormat: String) -> String {
+        let h = minutes / 60
+        let m = minutes % 60
+        if h > 0 {
+            if countdownFormat == "full" {
+                return "\(prefix)\(h)h \(String(format: "%02d", m))m"
+            }
+            return "\(prefix)\(h)h\(String(format: "%02d", m))m"
+        }
+        return "\(prefix)\(m)m"
+    }
 }
 
 struct MawaqitData: Codable {
@@ -85,6 +92,8 @@ struct MawaqitData: Codable {
     var iqamaEnabled: Bool?
     var jumua: String?
     var jumua2: String?
+    var hijriDate: String?
+    var qiblaDirection: String?
     var cacheDate: String?
 }
 

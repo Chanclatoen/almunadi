@@ -46,6 +46,20 @@ struct PrayerTimesView: View {
                         .padding(.horizontal, 16)
                     }
 
+                    if service.hijriDate != nil || service.qiblaDirection != nil {
+                        HStack(spacing: 8) {
+                            if let hijri = service.hijriDate {
+                                Label(hijri, systemImage: "calendar")
+                            }
+                            if let qibla = service.qiblaDirection {
+                                Label("\(t("qibla")) \(qibla)", systemImage: "location.north.line")
+                            }
+                        }
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 16)
+                    }
+
                     Divider()
                         .padding(.top, 6)
                 }

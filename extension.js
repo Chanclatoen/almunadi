@@ -25,6 +25,13 @@ const PRAYER_ICONS = [
 ];
 const SHURUQ_ICON = 'daytime-sunrise-symbolic';
 const API_BASE = 'https://mawaqit.net/api/2.0/mosque';
+const KAABA_LATITUDE = 21.422487;
+const KAABA_LONGITUDE = 39.826206;
+const HIJRI_MONTHS = [
+    'Muharram', 'Safar', 'Rabi al-awwal', 'Rabi al-thani',
+    'Jumada al-awwal', 'Jumada al-thani', 'Rajab', 'Shaban',
+    'Ramadan', 'Shawwal', 'Dhu al-Qadah', 'Dhu al-Hijjah',
+];
 
 const TRANSLATIONS = {
     en: {
@@ -48,6 +55,34 @@ const TRANSLATIONS = {
         mosques: 'Mosques',
         saveCurrent: 'Save current mosque',
         updateAvailable: 'Update available',
+        hijriDate: 'Hijri date',
+        qibla: 'Qibla',
+        sinceLastPrayer: (name) => `Since ${name}`,
+    },
+    nl: {
+        prayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
+        shuruq: 'Shuruq',
+        jumuah: 'Jumuah',
+        jumuah2: 'Jumuah 2',
+        configure: 'Moskee instellen',
+        refresh: 'Vernieuwen',
+        loading: 'Laden...',
+        noMosque: 'Geen moskee ingesteld',
+        parseError: 'Parsefout',
+        error: 'Fout',
+        notifTitle: (name, time) => `${name} - ${time}`,
+        notifBody: (name) => `Het is tijd voor het ${name}-gebed`,
+        couldNotReach: 'Kon mawaqit.net niet bereiken',
+        couldNotParse: 'Kon gebedsgegevens niet lezen',
+        invalidUrl: 'Ongeldige URL',
+        usingCached: (err) => `Gegevens uit cache. ${err}`,
+        clickRetry: (err) => `${err} - klik om opnieuw te proberen`,
+        mosques: 'Moskeeen',
+        saveCurrent: 'Huidige moskee opslaan',
+        updateAvailable: 'Update beschikbaar',
+        hijriDate: 'Hijri-datum',
+        qibla: 'Qibla',
+        sinceLastPrayer: (name) => `Sinds ${name}`,
     },
     ar: {
         prayers: ['فجر', 'ظهر', 'عصر', 'مغرب', 'عشاء'],
@@ -130,6 +165,8 @@ export default class NextPrayerExtension extends Extension {
     _iqamaEnabled = false;
     _jumua = null;
     _jumua2 = null;
+    _hijriDate = null;
+    _qiblaDirection = null;
     _settingsChangedId = null;
     _notificationTimers = [];
     _notificationsChangedId = null;
@@ -392,6 +429,18 @@ export default class NextPrayerExtension extends Extension {
 
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
+        this._hijriItem = new PopupMenu.PopupImageMenuItem(this._t('hijriDate'), 'x-office-calendar-symbolic');
+        this._hijriItem.setSensitive(false);
+        this._hijriItem.visible = false;
+        this._indicator.menu.addMenuItem(this._hijriItem);
+
+        this._qiblaItem = new PopupMenu.PopupImageMenuItem(this._t('qibla'), 'go-next-symbolic');
+        this._qiblaItem.setSensitive(false);
+        this._qiblaItem.visible = false;
+        this._indicator.menu.addMenuItem(this._qiblaItem);
+
+        this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
         // Mosques submenu
         this._mosquesSubmenu = new PopupMenu.PopupSubMenuMenuItem(this._t('mosques'));
         this._indicator.menu.addMenuItem(this._mosquesSubmenu);
@@ -632,6 +681,42 @@ export default class NextPrayerExtension extends Extension {
         return this._settings.get_boolean('adhan-enabled');
     }
 
+    _formatQiblaDirection(latitude, longitude) {
+        const lat = Number(latitude);
+        const lon = Number(longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon))
+            return null;
+        const lat1 = lat * Math.PI / 180;
+        const lat2 = KAABA_LATITUDE * Math.PI / 180;
+        const deltaLon = (KAABA_LONGITUDE - lon) * Math.PI / 180;
+        const y = Math.sin(deltaLon);
+        const x = Math.cos(lat1) * Math.tan(lat2) - Math.sin(lat1) * Math.cos(deltaLon);
+        return `${Math.round((Math.atan2(y, x) * 180 / Math.PI + 360) % 360)}°`;
+    }
+
+    _gregorianToJdn(year, month, day) {
+        const a = Math.floor((14 - month) / 12);
+        const y = year + 4800 - a;
+        const m = month + 12 * a - 3;
+        return day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4)
+            - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+    }
+
+    _islamicToJdn(year, month, day) {
+        return day + Math.ceil(29.5 * (month - 1)) + (year - 1) * 354
+            + Math.floor((3 + 11 * year) / 30) + 1948439 - 1;
+    }
+
+    _formatHijriDate(adjustment = 0) {
+        const now = GLib.DateTime.new_now_local();
+        const jdn = this._gregorianToJdn(now.get_year(), now.get_month(), now.get_day_of_month())
+            + (parseInt(adjustment) || 0);
+        const year = Math.floor((30 * (jdn - 1948439) + 10646) / 10631);
+        const month = Math.min(12, Math.ceil((jdn - (29 + this._islamicToJdn(year, 1, 1))) / 29.5) + 1);
+        const day = jdn - this._islamicToJdn(year, month, 1) + 1;
+        return `${day} ${HIJRI_MONTHS[month - 1]} ${year} AH`;
+    }
+
     _displayTimes() {
         if (!this._times) return null;
         const times = [...this._times];
@@ -715,6 +800,8 @@ export default class NextPrayerExtension extends Extension {
                 this._iqamaEnabled = mosque.iqamaEnabled || false;
                 this._jumua = mosque.jumua || null;
                 this._jumua2 = mosque.jumua2 || null;
+                this._hijriDate = this._formatHijriDate(mosque.hijriAdjustment || 0);
+                this._qiblaDirection = this._formatQiblaDirection(mosque.latitude, mosque.longitude);
 
                 this._isCached = false;
                 this._lastError = null;
@@ -784,6 +871,12 @@ export default class NextPrayerExtension extends Extension {
             this._times = data.times;
             this._shuruq = data.shuruq || null;
             this._mosqueName = data.name || data.label || '';
+            this._iqama = data.iqama || null;
+            this._iqamaEnabled = data.iqamaEnabled || false;
+            this._jumua = data.jumua || null;
+            this._jumua2 = data.jumua2 || null;
+            this._hijriDate = this._formatHijriDate(data.hijriAdjustment || 0);
+            this._qiblaDirection = this._formatQiblaDirection(data.latitude, data.longitude);
         } catch (e) {
             logError(e, 'NextPrayer: JSON parse error');
             this._prayerLabel.set_text(this._t('parseError'));
@@ -851,6 +944,14 @@ export default class NextPrayerExtension extends Extension {
         this._shuruqItem.label.set_text(this._t('shuruq'));
         if (this._shuruq)
             this._shuruqTimeLabel.set_text(this._shuruq);
+
+        this._hijriItem.visible = Boolean(this._hijriDate);
+        if (this._hijriDate)
+            this._hijriItem.label.set_text(`${this._t('hijriDate')}: ${this._hijriDate}`);
+
+        this._qiblaItem.visible = Boolean(this._qiblaDirection);
+        if (this._qiblaDirection)
+            this._qiblaItem.label.set_text(`${this._t('qibla')}: ${this._qiblaDirection}`);
     }
 
     _toMinutes(timeStr) {
@@ -883,6 +984,20 @@ export default class NextPrayerExtension extends Extension {
         return `-${min}m`;
     }
 
+    _formatElapsed(elapsed) {
+        const format = this._settings.get_string('countdown-format') || 'compact';
+        const h = Math.floor(elapsed / 60);
+        const min = elapsed % 60;
+        if (format === 'full') {
+            if (h > 0)
+                return `+${h}h ${min.toString().padStart(2, '0')}m`;
+            return `+${min}m`;
+        }
+        if (h > 0)
+            return `+${h}h${min.toString().padStart(2, '0')}m`;
+        return `+${min}m`;
+    }
+
     _updateLabel() {
         if (!this._times || this._times.length < 5) return;
 
@@ -907,6 +1022,23 @@ export default class NextPrayerExtension extends Extension {
             iconIdx = nextEvent.index;
         }
 
+        if (displayMode === 'since') {
+            const events = this._prayerEvents(displayTimes);
+            let lastEvent = null;
+            for (const event of events) {
+                if (event.absoluteMinutes <= nowMinutes)
+                    lastEvent = event;
+            }
+            if (!lastEvent && events.length)
+                lastEvent = {...events[events.length - 1], absoluteMinutes: events[events.length - 1].absoluteMinutes - 1440};
+            if (lastEvent) {
+                name = this._t('sinceLastPrayer')(displayNames[lastEvent.index]);
+                time = displayTimes[lastEvent.index];
+                remaining = nowMinutes - lastEvent.absoluteMinutes;
+                iconIdx = lastEvent.index;
+            }
+        }
+
         this._icon.icon_name = PRAYER_ICONS[iconIdx];
         this._icon.visible = displayMode !== 'icon' || true;
 
@@ -915,6 +1047,9 @@ export default class NextPrayerExtension extends Extension {
         let showCountdown = true;
 
         switch (displayMode) {
+        case 'since':
+            showTime = false;
+            break;
         case 'time':
             showCountdown = false;
             break;
@@ -936,7 +1071,7 @@ export default class NextPrayerExtension extends Extension {
 
         this._prayerLabel.set_text(showName ? name : '');
         this._timeLabel.set_text(showTime ? time : '');
-        this._countdownLabel.set_text(showCountdown ? this._formatCountdown(remaining) : '');
+        this._countdownLabel.set_text(showCountdown ? (displayMode === 'since' ? this._formatElapsed(remaining) : this._formatCountdown(remaining)) : '');
         this._prayerLabel.visible = showName;
         this._timeLabel.visible = showTime;
         this._countdownLabel.visible = showCountdown;
@@ -1112,6 +1247,8 @@ export default class NextPrayerExtension extends Extension {
             iqamaEnabled: this._iqamaEnabled,
             jumua: this._jumua,
             jumua2: this._jumua2,
+            hijriDate: this._hijriDate,
+            qiblaDirection: this._qiblaDirection,
             date: new Date().toISOString().split('T')[0],
         });
         this._settings.set_string('cached-data', cache);
@@ -1130,6 +1267,8 @@ export default class NextPrayerExtension extends Extension {
             this._iqamaEnabled = data.iqamaEnabled || false;
             this._jumua = data.jumua || null;
             this._jumua2 = data.jumua2 || null;
+            this._hijriDate = data.hijriDate || null;
+            this._qiblaDirection = data.qiblaDirection || null;
             this._isCached = true;
             this._updateLabel();
             this._updateMenu();

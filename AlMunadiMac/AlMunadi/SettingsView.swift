@@ -131,6 +131,7 @@ struct SettingsView: View {
             Section(t("display_mode")) {
                 Picker(t("display_mode"), selection: displayModeBinding) {
                     Text(t("display_countdown")).tag("countdown")
+                    Text(t("display_since")).tag("since")
                     Text(t("display_time")).tag("time")
                     Text(t("display_name")).tag("name")
                     Text(t("display_compact")).tag("compact")

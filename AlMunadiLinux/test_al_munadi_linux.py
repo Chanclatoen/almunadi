@@ -7,20 +7,27 @@ sys.modules.setdefault("pystray", MagicMock())
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from al_munadi_linux import (  # noqa: E402
+    LANGUAGE_LABELS,
+    _set_language,
     apply_offset,
     apply_prayer_offsets,
     default_prayer_notification_settings,
     extract_slug,
     format_countdown,
+    format_elapsed_since,
+    format_hijri_date,
     format_tray_title,
+    get_last_prayer,
     get_next_prayer,
     merge_prayer_notification_settings,
     merge_prayer_offsets,
     notification_key_for_index,
     parse_time,
     prayer_datetime_events,
+    qibla_bearing,
     resolve_iqama,
     should_play_adhan,
+    t,
 )
 
 
@@ -34,7 +41,7 @@ class TestLinuxHelpers:
         assert dt.hour == 13
         assert dt.minute == 30
 
-    @patch("al_munadi_linux.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_get_next_prayer_isha_wrapped_after_midnight(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -44,7 +51,7 @@ class TestLinuxHelpers:
         assert dt.hour == 0
         assert dt.minute == 15
 
-    @patch("al_munadi_linux.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_get_next_prayer_fajr_wrapped_to_previous_evening(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -54,12 +61,18 @@ class TestLinuxHelpers:
         assert dt.hour == 23
         assert dt.minute == 45
 
-    @patch("al_munadi_linux.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_format_countdown(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 10, 0, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target) == "-2h30m"
         assert format_countdown(target, {"countdown_format": "full"}) == "-2h 30m"
+
+    @patch("core.al_munadi_core.datetime")
+    def test_elapsed_since(self, mock_dt):
+        mock_dt.now.return_value = datetime(2026, 6, 8, 13, 45, 0)
+        target = datetime(2026, 6, 8, 12, 30, 0)
+        assert format_elapsed_since(target) == "+1h15m"
 
     def test_apply_offset(self):
         assert apply_offset("12:30", 15) == "12:45"
@@ -78,6 +91,14 @@ class TestLinuxHelpers:
         fajr_events = prayer_datetime_events(["23:45", "12:30", "16:00", "20:30", "22:00"], base)
         assert fajr_events[0][1].day == 7
         assert fajr_events[1][1].day == 8
+
+    @patch("core.al_munadi_core.datetime")
+    def test_get_last_prayer(self, mock_dt):
+        mock_dt.now.return_value = datetime(2026, 6, 8, 17, 0, 0)
+        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+        idx, dt = get_last_prayer(["05:30", "12:30", "16:00", "20:30", "22:00"])
+        assert idx == 2
+        assert dt.hour == 16
 
     def test_format_tray_title(self):
         assert format_tray_title("Dhuhr", "12:30", "-1h30m", "countdown") == "Dhuhr  12:30  -1h30m"
@@ -102,3 +123,14 @@ class TestLinuxHelpers:
         assert resolve_iqama("12:30", "+15") == "12:45"
         assert resolve_iqama("12:30", "13:00") == "13:00"
         assert resolve_iqama("12:30", "+0") is None
+
+    def test_dutch_language_available(self):
+        _set_language("nl")
+        assert LANGUAGE_LABELS["nl"] == "Nederlands"
+        assert t("settings") == "Instellingen"
+        assert t("next_prayer") == "Volgend gebed"
+        _set_language("en")
+
+    def test_islamic_metadata_helpers(self):
+        assert 120 <= qibla_bearing(52.0, 5.0) <= 130
+        assert format_hijri_date(datetime(2026, 6, 8), adjustment=0).endswith("AH")

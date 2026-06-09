@@ -52,7 +52,7 @@ The crescent/prayer icon appears in your system tray. Click it to see prayer tim
 
 ```bash
 pip install -r requirements.txt pyinstaller
-pyinstaller --onefile --name AlMunadiLinux al_munadi_linux.py
+pyinstaller --onefile --paths .. --name AlMunadiLinux al_munadi_linux.py
 ```
 
 The binary will be in `dist/AlMunadiLinux`. Copy it anywhere and run it directly -- no Python needed at runtime.

@@ -22,12 +22,12 @@ struct MenuBarLabel: View {
     @ObservedObject var service: PrayerService
 
     var body: some View {
-        let next = service.nextPrayer
         let displayMode = service.displayMode
-        let text = next?.menuBarText(displayMode: displayMode, countdownFormat: service.countdownFormat) ?? t("next_prayer")
+        let prayer = displayMode == "since" ? service.lastPrayer : service.nextPrayer
+        let text = prayer?.menuBarText(displayMode: displayMode, countdownFormat: service.countdownFormat) ?? t("next_prayer")
 
         HStack(spacing: 4) {
-            Image(systemName: next?.icon ?? "clock")
+            Image(systemName: prayer?.icon ?? "clock")
             if displayMode != "icon" && !text.isEmpty {
                 Text(text)
             }

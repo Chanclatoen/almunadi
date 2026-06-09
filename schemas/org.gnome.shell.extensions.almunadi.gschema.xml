@@ -19,7 +19,7 @@
     <key name="language" type="s">
       <default>'en'</default>
       <summary>Display language</summary>
-      <description>Language for prayer names and UI strings (en, ar, fr, tr)</description>
+      <description>Language for prayer names and UI strings (en, nl, ar, fr, tr)</description>
     </key>
     <key name="adhan-enabled" type="b">
       <default>false</default>
@@ -34,7 +34,7 @@
     <key name="display-mode" type="s">
       <default>'countdown'</default>
       <summary>Display mode</summary>
-      <description>Panel display mode: countdown, time, name, compact, or icon</description>
+      <description>Panel display mode: countdown, since, time, name, compact, or icon</description>
     </key>
     <key name="countdown-format" type="s">
       <default>'compact'</default>

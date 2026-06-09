@@ -7,7 +7,17 @@ Display the next Islamic prayer time in your desktop's top bar / menu bar / syst
 ![macOS 14+](https://img.shields.io/badge/macOS-14+-black)
 ![Windows 10+](https://img.shields.io/badge/Windows-10+-0078D6)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
-![Languages](https://img.shields.io/badge/i18n-EN%20%7C%20AR%20%7C%20FR%20%7C%20TR-orange)
+![Languages](https://img.shields.io/badge/i18n-EN%20%7C%20NL%20%7C%20AR%20%7C%20FR%20%7C%20TR-orange)
+
+## Screenshots
+
+Platform screenshots are tracked under `docs/screenshots/`:
+
+- GNOME Shell extension: `docs/screenshots/gnome.png`
+- Linux tray app: `docs/screenshots/linux.png`
+- Windows tray app: `docs/screenshots/windows.png`
+- macOS menu bar app: `docs/screenshots/macos.png`
+- Mosque finder website: `docs/screenshots/site.png`
 
 ## Quick Install
 
@@ -67,14 +77,17 @@ Right-click the top bar indicator and choose **Configure mosque** to search for 
 - **Works everywhere** — native GNOME extension, macOS menu bar app, Windows tray app, and standalone Linux tray app for KDE/XFCE/Cinnamon/MATE
 - **Prayer times in your desktop** — next prayer name, time, and live countdown always visible
 - **All 5 daily prayers + Shuruq** — click to see the full schedule
+- **Hijri date + Qibla direction** — shown in the popup/menu when mosque metadata is available
 - **Iqama times** — shown when your mosque provides them via Mawaqit
 - **Jumuah (Friday prayer)** — automatically replaces Dhuhr on Fridays with your mosque's Jumuah time
+- **Since last prayer mode** — switch the tray/menu bar text from countdown to elapsed time since the previous prayer
 - **Desktop notifications** — fires at the exact second each prayer arrives (toggle on/off)
+- **Jumuah reminder control** — Jumuah has its own per-prayer reminder setting, separate from daily Dhuhr
 - **Adhan audio** — optionally play your own adhan audio file at each prayer time
 - **Mosque search** — find your mosque by name or city, no need to hunt for URLs
 - **Multi-mosque** — save multiple mosques and switch between them instantly
 - **Offline cache** — keeps working when your network is down, using the last fetched data
-- **4 languages** — English, Arabic (عربي), French (Français), Turkish (Türkçe)
+- **5 languages** — English, Dutch (Nederlands), Arabic (عربي), French (Français), Turkish (Türkçe)
 - **Mawaqit API** — uses the structured API for reliable data, with HTML scraping as fallback
 - **No account needed** — works with any public mosque on mawaqit.net
 - **Daily auto-refresh** — fetches new times around midnight
@@ -105,10 +118,21 @@ If you prefer not to use `make install`:
 Or install from source manually:
 
 ```bash
+mkdir -p ~/.local/share/gnome-shell/extensions/almunadi@almunadi.net/
 cp -r extension.js prefs.js metadata.json stylesheet.css schemas/ \
   ~/.local/share/gnome-shell/extensions/almunadi@almunadi.net/
 glib-compile-schemas ~/.local/share/gnome-shell/extensions/almunadi@almunadi.net/schemas/
 ```
+
+The GNOME `metadata.json` uses two version fields: `app-version` follows the app semver, while `version` is the monotonically increasing GNOME Extensions package version required by ego.gnome.org.
+
+## Source Layout
+
+- Shared Python logic: `core/al_munadi_core.py`
+- Windows tray entrypoint: `AlMunadiWindows/al_munadi.py`
+- Linux tray entrypoint: `AlMunadiLinux/al_munadi_linux.py`
+- GNOME Shell extension: `extension.js`, `prefs.js`, `metadata.json`, `schemas/`
+- macOS menu bar app: `AlMunadiMac/`
 
 ## How It Works
 
@@ -136,7 +160,7 @@ This creates a release with:
 
 The static website lives in `site/` and deploys to GitHub Pages on pushes to `main`.
 
-The hosted mosque finder uses a Cloudflare Worker in `worker/` for live Mawaqit search because the Mawaqit endpoint does not expose browser CORS headers. After deploying the Worker, update `site/config.js` with the Worker origin unless the Worker is mounted under the same site domain.
+The hosted mosque finder uses a Cloudflare Worker in `worker/` for live Mawaqit search because the Mawaqit endpoint does not expose browser CORS headers. After deploying the Worker, copy `site/config.example.js` to `site/config.js` and set the Worker origin unless the Worker is mounted under the same site domain.
 
 ## Testing
 

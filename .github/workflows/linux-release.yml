@@ -26,7 +26,7 @@ jobs:
         run: pip install -r requirements.txt pyinstaller
 
       - name: Build executable
-        run: pyinstaller --onefile --name AlMunadi-Linux al_munadi_linux.py
+        run: pyinstaller --onefile --paths .. --name AlMunadi-Linux al_munadi_linux.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

@@ -136,11 +136,12 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
 
         const langModel = new Gtk.StringList();
         langModel.append('English');
+        langModel.append('Nederlands');
         langModel.append('العربية');
         langModel.append('Français');
         langModel.append('Türkçe');
 
-        const langCodes = ['en', 'ar', 'fr', 'tr'];
+        const langCodes = ['en', 'nl', 'ar', 'fr', 'tr'];
 
         const langRow = new Adw.ComboRow({
             title: 'Language',
@@ -206,12 +207,13 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
 
         const displayModel = new Gtk.StringList();
         displayModel.append('Countdown (name + time + countdown)');
+        displayModel.append('Since last prayer');
         displayModel.append('Time (name + time)');
         displayModel.append('Name only');
         displayModel.append('Compact (name + countdown)');
         displayModel.append('Icon only');
 
-        const displayCodes = ['countdown', 'time', 'name', 'compact', 'icon'];
+        const displayCodes = ['countdown', 'since', 'time', 'name', 'compact', 'icon'];
 
         const displayRow = new Adw.ComboRow({
             title: 'Display mode',

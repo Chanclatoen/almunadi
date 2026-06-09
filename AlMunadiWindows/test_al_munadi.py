@@ -17,9 +17,14 @@ from unittest.mock import patch
 import pytest
 
 from al_munadi import (
+    LANGUAGE_LABELS,
+    _set_language,
     extract_slug,
     format_countdown,
+    format_elapsed_since,
+    format_hijri_date,
     get_next_prayer,
+    get_last_prayer,
     parse_time,
     resolve_iqama,
     apply_offset,
@@ -31,6 +36,8 @@ from al_munadi import (
     should_play_adhan,
     default_prayer_notification_settings,
     prayer_datetime_events,
+    qibla_bearing,
+    t,
 )
 
 
@@ -73,7 +80,7 @@ class TestParseTime:
 
 
 class TestGetNextPrayer:
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_midday(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 12, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -83,7 +90,7 @@ class TestGetNextPrayer:
         assert dt.hour == 12
         assert dt.minute == 30
 
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_after_isha(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -92,7 +99,7 @@ class TestGetNextPrayer:
         assert idx == 0
         assert dt.day == 9
 
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_before_fajr(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 3, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -101,7 +108,7 @@ class TestGetNextPrayer:
         assert idx == 0
         assert dt.hour == 5
 
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_isha_wrapped_after_midnight(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -112,7 +119,7 @@ class TestGetNextPrayer:
         assert dt.hour == 0
         assert dt.minute == 15
 
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_fajr_wrapped_to_previous_evening(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -125,29 +132,35 @@ class TestGetNextPrayer:
 
 
 class TestFormatCountdown:
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_hours_and_minutes(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 10, 0, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target) == "-2h30m"
 
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_minutes_only(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 12, 15, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target) == "-15m"
 
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_full_format(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 10, 0, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target, {"countdown_format": "full"}) == "-2h 30m"
 
-    @patch("al_munadi.datetime")
+    @patch("core.al_munadi_core.datetime")
     def test_now(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 12, 30, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target) == "now"
+
+    @patch("core.al_munadi_core.datetime")
+    def test_elapsed_since(self, mock_dt):
+        mock_dt.now.return_value = datetime(2026, 6, 8, 13, 45, 0)
+        target = datetime(2026, 6, 8, 12, 30, 0)
+        assert format_elapsed_since(target) == "+1h15m"
 
 
 class TestApplyOffset:
@@ -181,6 +194,14 @@ class TestPrayerDateTimeEvents:
         events = prayer_datetime_events(["23:45", "12:30", "16:00", "20:30", "22:00"], base)
         assert events[0][1].day == 7
         assert events[1][1].day == 8
+
+    @patch("core.al_munadi_core.datetime")
+    def test_get_last_prayer(self, mock_dt):
+        mock_dt.now.return_value = datetime(2026, 6, 8, 17, 0, 0)
+        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+        idx, dt = get_last_prayer(["05:30", "12:30", "16:00", "20:30", "22:00"])
+        assert idx == 2
+        assert dt.hour == 16
 
 
 class TestFormatTrayTitle:
@@ -221,6 +242,24 @@ class TestMergeOffsets:
     def test_clamp(self):
         merged = merge_prayer_offsets({"Maghrib": 90})
         assert merged["Maghrib"] == 60
+
+
+class TestTranslations:
+    def test_dutch_language_available(self):
+        _set_language("nl")
+        assert LANGUAGE_LABELS["nl"] == "Nederlands"
+        assert t("settings") == "Instellingen"
+        assert t("next_prayer") == "Volgend gebed"
+        _set_language("en")
+
+
+class TestIslamicMetadata:
+    def test_qibla_bearing_from_netherlands(self):
+        bearing = qibla_bearing(52.0, 5.0)
+        assert 120 <= bearing <= 130
+
+    def test_hijri_date_format(self):
+        assert format_hijri_date(datetime(2026, 6, 8), adjustment=0).endswith("AH")
 
 
 class TestResolveIqama:
