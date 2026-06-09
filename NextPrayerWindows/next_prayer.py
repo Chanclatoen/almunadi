@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from winotify import Notification, audio
 
 APP_NAME = "Next Prayer (Mawaqit)"
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 TAG_PREFIX = "v"
 RELEASES_URL = "https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases"
 REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/next-prayer-mawaqit/releases"
