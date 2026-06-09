@@ -3,7 +3,7 @@ name: Windows Release
 on:
   push:
     tags:
-      - "win-v*"
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -39,4 +39,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: NextPrayerWindows/dist/NextPrayer.exe
-          generate_release_notes: true
