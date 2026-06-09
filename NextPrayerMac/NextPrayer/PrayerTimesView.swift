@@ -223,7 +223,7 @@ struct PrayerRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(prayer.displayName)
                     .font(.system(size: 13, weight: isNext ? .semibold : .regular))
-                    .foregroundStyle(isPast ? .secondary.opacity(0.6) : .primary)
+                    .foregroundStyle(isPast ? AnyShapeStyle(.secondary.opacity(0.6)) : AnyShapeStyle(.primary))
 
                 if let iqama = prayer.iqamaTime {
                     HStack(spacing: 3) {
