@@ -12,8 +12,8 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const _VERSION = '1.0.2';
 const _TAG_PREFIX = 'v';
-const _RELEASES_URL = 'https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases';
-const _REPO_RELEASES_PAGE = 'https://github.com/Chanclatoen/next-prayer-mawaqit/releases';
+const _RELEASES_URL = 'https://api.github.com/repos/Chanclatoen/almunadi/releases';
+const _REPO_RELEASES_PAGE = 'https://github.com/Chanclatoen/almunadi/releases';
 
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const PRAYER_ICONS = [

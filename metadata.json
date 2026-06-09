@@ -1,5 +1,5 @@
 {
-    "name": "Next Prayer (Mawaqit)",
+    "name": "Al Munadi",
     "description": "Shows the next prayer time from your Mawaqit mosque in the GNOME top bar",
     "uuid": "next-prayer@mawaqit",
     "settings-schema": "org.gnome.shell.extensions.next-prayer",

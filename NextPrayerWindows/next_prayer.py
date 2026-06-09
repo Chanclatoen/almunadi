@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import shutil
 import threading
 import time
 import ctypes
@@ -12,11 +13,11 @@ import pystray
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from winotify import Notification, audio
 
-APP_NAME = "Next Prayer (Mawaqit)"
+APP_NAME = "Al Munadi"
 APP_VERSION = "1.0.2"
 TAG_PREFIX = "v"
-RELEASES_URL = "https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases"
-REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/next-prayer-mawaqit/releases"
+RELEASES_URL = "https://api.github.com/repos/Chanclatoen/almunadi/releases"
+REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/almunadi/releases"
 PRAYER_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 PRAYER_ICONS = {
     "Fajr": "☀",
@@ -28,9 +29,15 @@ PRAYER_ICONS = {
 }
 API_BASE = "https://mawaqit.net/api/2.0/mosque"
 
-APP_DATA_DIR = os.path.join(
-    os.environ.get("APPDATA", os.path.expanduser("~")), "NextPrayer"
-)
+_APPDATA_ROOT = os.environ.get("APPDATA", os.path.expanduser("~"))
+APP_DATA_DIR = os.path.join(_APPDATA_ROOT, "AlMunadi")
+# One-time migration from the pre-rebrand "NextPrayer" data directory.
+_LEGACY_DATA_DIR = os.path.join(_APPDATA_ROOT, "NextPrayer")
+if os.path.isdir(_LEGACY_DATA_DIR) and not os.path.isdir(APP_DATA_DIR):
+    try:
+        shutil.copytree(_LEGACY_DATA_DIR, APP_DATA_DIR)
+    except Exception:
+        pass
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 SETTINGS_FILE = os.path.join(APP_DATA_DIR, "settings.json")
 CACHE_FILE = os.path.join(APP_DATA_DIR, "cache.json")

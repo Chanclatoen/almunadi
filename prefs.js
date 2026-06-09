@@ -14,7 +14,7 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
         const session = new Soup.Session();
 
         const page = new Adw.PreferencesPage({
-            title: 'Next Prayer',
+            title: 'Al Munadi',
             icon_name: 'preferences-system-time-symbolic',
         });
 

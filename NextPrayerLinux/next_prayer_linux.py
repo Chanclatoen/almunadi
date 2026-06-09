@@ -11,11 +11,11 @@ import requests
 import pystray
 from PIL import Image, ImageDraw, ImageFont
 
-APP_NAME = "Next Prayer (Mawaqit)"
+APP_NAME = "Al Munadi"
 APP_VERSION = "1.0.2"
 TAG_PREFIX = "v"
-RELEASES_URL = "https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases"
-REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/next-prayer-mawaqit/releases"
+RELEASES_URL = "https://api.github.com/repos/Chanclatoen/almunadi/releases"
+REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/almunadi/releases"
 PRAYER_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
 PRAYER_ICONS = {
     "Fajr": "☀",
@@ -29,7 +29,14 @@ API_BASE = "https://mawaqit.net/api/2.0/mosque"
 
 # XDG-compliant config directory
 _XDG_CONFIG = os.environ.get("XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config"))
-APP_DATA_DIR = os.path.join(_XDG_CONFIG, "NextPrayer")
+APP_DATA_DIR = os.path.join(_XDG_CONFIG, "AlMunadi")
+# One-time migration from the pre-rebrand "NextPrayer" data directory.
+_LEGACY_DATA_DIR = os.path.join(_XDG_CONFIG, "NextPrayer")
+if os.path.isdir(_LEGACY_DATA_DIR) and not os.path.isdir(APP_DATA_DIR):
+    try:
+        shutil.copytree(_LEGACY_DATA_DIR, APP_DATA_DIR)
+    except Exception:
+        pass
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 SETTINGS_FILE = os.path.join(APP_DATA_DIR, "settings.json")
 CACHE_FILE = os.path.join(APP_DATA_DIR, "cache.json")

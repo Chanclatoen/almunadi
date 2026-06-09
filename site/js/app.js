@@ -10,7 +10,7 @@ import {
     sortMosques,
 } from './mosque-utils.js';
 
-const config = window.NEXT_PRAYER_CONFIG || {};
+const config = window.AL_MUNADI_CONFIG || {};
 const state = {
     controller: null,
     debounceTimer: null,
