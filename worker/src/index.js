@@ -1,5 +1,7 @@
 const MAWAQIT_SEARCH_URL = 'https://mawaqit.net/api/2.0/mosque/search?word=';
 const DEFAULT_ALLOWED_ORIGINS = [
+    'https://almunadi.net',
+    'https://www.almunadi.net',
     'https://chanclatoen.github.io',
     'http://localhost:8000',
     'http://127.0.0.1:8000',

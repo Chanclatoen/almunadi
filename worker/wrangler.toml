@@ -3,8 +3,9 @@ main = "src/index.js"
 compatibility_date = "2026-06-09"
 
 routes = [
+    { pattern = "api.almunadi.net", custom_domain = true },
     { pattern = "mawaqitsearch.chanclatoen.nl", custom_domain = true }
 ]
 
 [vars]
-ALLOWED_ORIGINS = "https://chanclatoen.github.io,http://localhost:8000,http://127.0.0.1:8000"
+ALLOWED_ORIGINS = "https://almunadi.net,https://www.almunadi.net,https://chanclatoen.github.io,http://localhost:8000,http://127.0.0.1:8000"
