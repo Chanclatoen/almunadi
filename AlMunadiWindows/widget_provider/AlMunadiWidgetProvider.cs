@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
+using Microsoft.Windows.Widgets;
 using Microsoft.Windows.Widgets.Providers;
 
 namespace AlMunadi.Widget;
