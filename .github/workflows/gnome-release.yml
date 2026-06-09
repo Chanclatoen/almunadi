@@ -1,0 +1,40 @@
+name: GNOME Release
+
+on:
+  push:
+    tags:
+      - "gnome-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get install -y libglib2.0-bin
+
+      - name: Compile schemas
+        run: glib-compile-schemas schemas/
+
+      - name: Package extension
+        run: |
+          zip -r next-prayer@mawaqit.zip \
+            extension.js prefs.js metadata.json stylesheet.css schemas/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-prayer-gnome
+          path: "next-prayer@mawaqit.zip"
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "next-prayer@mawaqit.zip"
+          generate_release_notes: true

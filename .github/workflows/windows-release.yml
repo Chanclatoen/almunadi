@@ -1,0 +1,42 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - "win-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: NextPrayerWindows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      - name: Build executable
+        run: pyinstaller --onefile --noconsole --name NextPrayer next_prayer.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NextPrayer-Windows
+          path: NextPrayerWindows/dist/NextPrayer.exe
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: NextPrayerWindows/dist/NextPrayer.exe
+          generate_release_notes: true

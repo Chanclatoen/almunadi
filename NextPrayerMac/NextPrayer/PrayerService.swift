@@ -1,22 +1,70 @@
 import Foundation
 import Combine
 import UserNotifications
+import AVFoundation
 
 class PrayerService: ObservableObject {
+    static let appVersion = "1.0.0"
+    static let tagPrefix = "mac-v"
+    private static let releasesURL = "https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases"
+    private static let repoReleasesPage = "https://github.com/Chanclatoen/next-prayer-mawaqit/releases"
+
     @Published var prayers: [PrayerTime] = []
     @Published var shuruq: String?
     @Published var mosqueName: String = ""
     @Published var nextPrayer: PrayerTime?
     @Published var lastError: String?
+    @Published var isCached: Bool = false
+    @Published var jumua2: String?
+    @Published var searchResults: [MosqueSearchResult] = []
+    @Published var isSearching: Bool = false
+    @Published var savedMosques: [SavedMosque] = []
+    @Published var language: String = UserDefaults.standard.string(forKey: "language") ?? "en"
+    @Published var updateInfo: (version: String, url: String)?
 
     private var updateTimer: AnyCancellable?
     private var notificationTimers: [Timer] = []
+    private var updateCheckTimer: Timer?
     private let calendar = Calendar.current
+    private static let apiBase = "https://mawaqit.net/api/2.0/mosque"
+    private var audioPlayer: AVAudioPlayer?
+
+    var notificationsEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "notificationsEnabled")
+            if newValue { scheduleNotifications() } else { cancelNotifications() }
+        }
+    }
+
+    var adhanEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "adhanEnabled") }
+        set { UserDefaults.standard.set(newValue, forKey: "adhanEnabled") }
+    }
+
+    var adhanPath: String {
+        get { UserDefaults.standard.string(forKey: "adhanPath") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "adhanPath") }
+    }
+
+    var countdownFormat: String {
+        get { UserDefaults.standard.string(forKey: "countdownFormat") ?? "compact" }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "countdownFormat")
+            objectWillChange.send()
+        }
+    }
 
     init() {
+        loadSavedMosques()
         requestNotificationPermission()
         startUpdateTimer()
+        loadCache()
         fetchIfConfigured()
+        checkForUpdate()
+        updateCheckTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
+            self?.checkForUpdate()
+        }
     }
 
     var mosqueUrl: String {
@@ -26,6 +74,120 @@ class PrayerService: ObservableObject {
             fetchTimes()
         }
     }
+
+    // MARK: - Language
+
+    func setLanguage(_ lang: String) {
+        UserDefaults.standard.set(lang, forKey: "language")
+        language = lang
+        // Re-apply display names for current prayers
+        updateDisplayNames()
+    }
+
+    private func updateDisplayNames() {
+        let showJumuah = isFriday()
+        for i in prayers.indices {
+            let prayer = prayers[i]
+            if prayer.name == .dhuhr && showJumuah {
+                prayers[i].displayName = t("jumuah")
+            } else {
+                prayers[i].displayName = Translations.shared.translatedPrayerName(prayer.name)
+            }
+        }
+        updateNextPrayer()
+    }
+
+    // MARK: - Multi-Mosque
+
+    private func loadSavedMosques() {
+        guard let data = UserDefaults.standard.data(forKey: "savedMosques"),
+              let mosques = try? JSONDecoder().decode([SavedMosque].self, from: data)
+        else { return }
+        savedMosques = mosques
+    }
+
+    private func persistSavedMosques() {
+        if let data = try? JSONEncoder().encode(savedMosques) {
+            UserDefaults.standard.set(data, forKey: "savedMosques")
+        }
+    }
+
+    func saveMosque(url: String, name: String) {
+        guard !url.isEmpty else { return }
+        // Avoid duplicates
+        if savedMosques.contains(where: { $0.url == url }) { return }
+        savedMosques.append(SavedMosque(url: url, name: name))
+        persistSavedMosques()
+    }
+
+    func removeMosque(at index: Int) {
+        guard savedMosques.indices.contains(index) else { return }
+        savedMosques.remove(at: index)
+        persistSavedMosques()
+    }
+
+    func switchToMosque(_ mosque: SavedMosque) {
+        mosqueUrl = mosque.url
+    }
+
+    // MARK: - Adhan
+
+    private func playAdhan() {
+        guard adhanEnabled else { return }
+        let path = adhanPath
+        guard !path.isEmpty else { return }
+        let fileURL = URL(fileURLWithPath: path)
+        guard FileManager.default.fileExists(atPath: path) else { return }
+
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: fileURL)
+            audioPlayer?.play()
+        } catch {
+            print("Adhan playback error: \(error)")
+        }
+    }
+
+    // MARK: - Update Check
+
+    func checkForUpdate() {
+        guard let url = URL(string: Self.releasesURL) else { return }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 10
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            guard let self, error == nil, let data,
+                  let releases = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+            else { return }
+
+            for release in releases {
+                guard let tag = release["tag_name"] as? String,
+                      tag.hasPrefix(Self.tagPrefix)
+                else { continue }
+
+                let latest = String(tag.dropFirst(Self.tagPrefix.count))
+                let currentParts = Self.appVersion.split(separator: ".").compactMap { Int($0) }
+                let latestParts = latest.split(separator: ".").compactMap { Int($0) }
+
+                var newer = false
+                for i in 0..<max(currentParts.count, latestParts.count) {
+                    let c = i < currentParts.count ? currentParts[i] : 0
+                    let l = i < latestParts.count ? latestParts[i] : 0
+                    if l > c { newer = true; break }
+                    if l < c { break }
+                }
+
+                if newer {
+                    let htmlUrl = (release["html_url"] as? String) ?? Self.repoReleasesPage
+                    DispatchQueue.main.async {
+                        self.updateInfo = (version: latest, url: htmlUrl)
+                    }
+                }
+                return // Only check the first matching release
+            }
+        }.resume()
+    }
+
+    // MARK: - Fetch
 
     func fetchIfConfigured() {
         guard !mosqueUrl.isEmpty else { return }
@@ -39,6 +201,67 @@ class PrayerService: ObservableObject {
             return
         }
 
+        if let slug = extractSlug(from: urlString) {
+            fetchTimesApi(slug: slug) { [weak self] success in
+                if !success {
+                    self?.fetchTimesHtml(urlString: urlString)
+                }
+            }
+        } else {
+            fetchTimesHtml(urlString: urlString)
+        }
+    }
+
+    private func fetchTimesApi(slug: String, completion: @escaping (Bool) -> Void) {
+        guard let url = URL(string: "\(Self.apiBase)/search?word=\(slug)") else {
+            completion(false)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 15
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                guard error == nil,
+                      let data,
+                      let results = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+                      let mosque = results.first,
+                      let apiTimes = mosque["times"] as? [String],
+                      apiTimes.count >= 6
+                else {
+                    completion(false)
+                    return
+                }
+
+                let times = [apiTimes[0], apiTimes[2], apiTimes[3], apiTimes[4], apiTimes[5]]
+                let shuruq = apiTimes[1]
+                let name = (mosque["name"] as? String) ?? (mosque["label"] as? String) ?? ""
+                let iqama = mosque["iqama"] as? [String]
+                let iqamaEnabled = mosque["iqamaEnabled"] as? Bool ?? false
+                let jumua = mosque["jumua"] as? String
+                let jumua2 = mosque["jumua2"] as? String
+
+                let mawaqitData = MawaqitData(
+                    times: times,
+                    shuruq: shuruq,
+                    mosqueName: name,
+                    iqama: iqama,
+                    iqamaEnabled: iqamaEnabled,
+                    jumua: jumua,
+                    jumua2: jumua2
+                )
+                self.applyData(mawaqitData)
+                self.scheduleDailyRefresh()
+                completion(true)
+            }
+        }.resume()
+    }
+
+    private func fetchTimesHtml(urlString: String) {
         var fetchUrl = urlString
         if !fetchUrl.contains("/w/") {
             if let slug = extractSlug(from: fetchUrl) {
@@ -47,7 +270,7 @@ class PrayerService: ObservableObject {
         }
 
         guard let url = URL(string: fetchUrl) else {
-            lastError = "Invalid URL"
+            handleFetchError("Invalid URL")
             return
         }
 
@@ -58,14 +281,12 @@ class PrayerService: ObservableObject {
                 guard let self else { return }
 
                 if let error {
-                    self.lastError = error.localizedDescription
-                    self.retryFetchLater()
+                    self.handleFetchError("Could not reach mawaqit.net: \(error.localizedDescription)")
                     return
                 }
 
                 guard let data, let html = String(data: data, encoding: .utf8) else {
-                    self.lastError = "Could not read response"
-                    self.retryFetchLater()
+                    self.handleFetchError("Could not read response")
                     return
                 }
 
@@ -73,11 +294,57 @@ class PrayerService: ObservableObject {
                     self.applyData(mawaqitData)
                     self.scheduleDailyRefresh()
                 } else {
-                    self.lastError = "Could not parse prayer times"
-                    self.retryFetchLater()
+                    self.handleFetchError("Could not parse prayer times")
                 }
             }
         }.resume()
+    }
+
+    func searchMosques(query: String) {
+        guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            searchResults = []
+            return
+        }
+
+        isSearching = true
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        guard let url = URL(string: "\(Self.apiBase)/search?word=\(encoded)") else {
+            isSearching = false
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 15
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isSearching = false
+
+                guard let data,
+                      let results = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+                else {
+                    self.searchResults = []
+                    return
+                }
+
+                self.searchResults = results.prefix(10).compactMap { m in
+                    guard let slug = m["slug"] as? String else { return nil }
+                    return MosqueSearchResult(
+                        id: m["uuid"] as? String ?? slug,
+                        name: (m["name"] as? String) ?? "",
+                        slug: slug,
+                        localisation: (m["localisation"] as? String) ?? ""
+                    )
+                }
+            }
+        }.resume()
+    }
+
+    func selectMosque(_ mosque: MosqueSearchResult) {
+        mosqueUrl = "https://mawaqit.net/en/w/\(mosque.slug)"
+        searchResults = []
     }
 
     private func extractSlug(from url: String) -> String? {
@@ -108,22 +375,93 @@ class PrayerService: ObservableObject {
         return MawaqitData(times: times, shuruq: shuruq, mosqueName: name)
     }
 
-    private func applyData(_ data: MawaqitData) {
+    private func resolveIqama(prayerTime: String, iqamaValue: String?) -> String? {
+        guard let val = iqamaValue?.trimmingCharacters(in: .whitespaces),
+              !val.isEmpty, val != "0", val != "+0"
+        else { return nil }
+        if val.contains(":") { return val }
+        let cleanVal = val.hasPrefix("+") ? String(val.dropFirst()) : val
+        guard let offset = Int(cleanVal), offset > 0,
+              let prayerDate = dateFromTimeString(prayerTime, relativeTo: Date())
+        else { return nil }
+        let iqamaDate = prayerDate.addingTimeInterval(Double(offset * 60))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: iqamaDate)
+    }
+
+    private func isFriday() -> Bool {
+        calendar.component(.weekday, from: Date()) == 6
+    }
+
+    private func saveCache(_ data: MawaqitData) {
+        var cacheData = data
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        cacheData.cacheDate = formatter.string(from: Date())
+        if let encoded = try? JSONEncoder().encode(cacheData) {
+            UserDefaults.standard.set(encoded, forKey: "cachedPrayerData")
+        }
+    }
+
+    private func loadCache() {
+        guard let data = UserDefaults.standard.data(forKey: "cachedPrayerData"),
+              let cached = try? JSONDecoder().decode(MawaqitData.self, from: data),
+              !cached.times.isEmpty
+        else { return }
+        isCached = true
+        applyData(cached, fromCache: true)
+    }
+
+    private func applyData(_ data: MawaqitData, fromCache: Bool = false) {
         let names = PrayerName.allCases
         let today = Date()
+        let showJumuah = isFriday() && data.jumua != nil
 
         var prayerTimes: [PrayerTime] = []
         for (i, name) in names.enumerated() where i < data.times.count {
-            if let date = dateFromTimeString(data.times[i], relativeTo: today) {
-                prayerTimes.append(PrayerTime(id: name, name: name, time: data.times[i], date: date))
+            var timeStr = data.times[i]
+            var displayName = Translations.shared.translatedPrayerName(name)
+
+            if i == 1 && showJumuah, let jumuaTime = data.jumua {
+                timeStr = jumuaTime
+                displayName = t("jumuah")
+            }
+
+            if let date = dateFromTimeString(timeStr, relativeTo: today) {
+                var iqamaTime: String? = nil
+                if data.iqamaEnabled == true, let iqama = data.iqama, i < iqama.count {
+                    iqamaTime = resolveIqama(prayerTime: data.times[i], iqamaValue: iqama[i])
+                }
+                prayerTimes.append(PrayerTime(
+                    id: name,
+                    name: name,
+                    time: timeStr,
+                    date: date,
+                    displayName: displayName,
+                    iqamaTime: iqamaTime
+                ))
             }
         }
 
         prayers = prayerTimes
         shuruq = data.shuruq
         mosqueName = data.mosqueName
+        jumua2 = (showJumuah ? data.jumua2 : nil)
+
+        if !fromCache {
+            isCached = false
+            lastError = nil
+            saveCache(data)
+        }
         updateNextPrayer()
         scheduleNotifications()
+    }
+
+    private func handleFetchError(_ message: String) {
+        lastError = message
+        if prayers.isEmpty { loadCache() }
+        retryFetchLater()
     }
 
     private func dateFromTimeString(_ timeStr: String, relativeTo date: Date) -> Date? {
@@ -146,15 +484,27 @@ class PrayerService: ObservableObject {
             nextPrayer = next
         } else if let first = prayers.first {
             if let tomorrow = calendar.date(byAdding: .day, value: 1, to: first.date) {
-                nextPrayer = PrayerTime(id: first.name, name: first.name, time: first.time, date: tomorrow)
+                nextPrayer = PrayerTime(
+                    id: first.name,
+                    name: first.name,
+                    time: first.time,
+                    date: tomorrow,
+                    displayName: first.displayName,
+                    iqamaTime: first.iqamaTime
+                )
             }
         }
         objectWillChange.send()
     }
 
-    private func scheduleNotifications() {
+    private func cancelNotifications() {
         notificationTimers.forEach { $0.invalidate() }
         notificationTimers.removeAll()
+    }
+
+    private func scheduleNotifications() {
+        cancelNotifications()
+        guard notificationsEnabled else { return }
 
         let now = Date()
         for prayer in prayers {
@@ -163,6 +513,7 @@ class PrayerService: ObservableObject {
 
             let timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
                 self?.sendNotification(prayer: prayer)
+                self?.playAdhan()
                 self?.updateNextPrayer()
             }
             notificationTimers.append(timer)
@@ -175,8 +526,8 @@ class PrayerService: ObservableObject {
 
     private func sendNotification(prayer: PrayerTime) {
         let content = UNMutableNotificationContent()
-        content.title = "\(prayer.name.rawValue) - \(prayer.time)"
-        content.body = "It's time for \(prayer.name.rawValue) prayer"
+        content.title = String(format: t("prayer_time_title"), prayer.displayName, prayer.time)
+        content.body = String(format: t("prayer_time_body"), prayer.displayName)
         content.sound = .default
 
         let request = UNNotificationRequest(

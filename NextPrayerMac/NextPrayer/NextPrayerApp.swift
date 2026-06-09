@@ -25,7 +25,7 @@ struct MenuBarLabel: View {
         let next = service.nextPrayer
         HStack(spacing: 4) {
             Image(systemName: next?.icon ?? "clock")
-            Text(next?.menuBarText ?? "Next Prayer")
+            Text(next?.menuBarText ?? t("next_prayer"))
         }
     }
 }

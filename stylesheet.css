@@ -1,5 +1,8 @@
+/* ===== Panel indicator (top bar) ===== */
+
 .next-prayer-box {
-    spacing: 6px;
+    spacing: 8px;
+    padding: 0 4px;
 }
 
 .next-prayer-icon {
@@ -8,44 +11,109 @@
 
 .next-prayer-name {
     font-weight: bold;
+    font-size: 1em;
 }
 
 .next-prayer-time {
-    font-weight: normal;
-    margin-left: 2px;
+    font-weight: 600;
+    margin-left: 4px;
 }
 
 .next-prayer-countdown {
     font-weight: normal;
-    font-size: 0.9em;
-    color: #aaa;
-    margin-left: 2px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.55);
+    margin-left: 4px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 2px 8px;
 }
+
+/* ===== Mosque name header ===== */
 
 .next-prayer-mosque-name {
     font-weight: bold;
-    font-size: 1.1em;
+    font-size: 1.15em;
     text-align: center;
+    padding: 6px 0 4px 0;
+    color: rgba(255, 255, 255, 0.95);
 }
+
+/* ===== Menu separator refinement ===== */
+
+.popup-separator-menu-item .popup-separator-menu-item-separator {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ===== Prayer menu items ===== */
+
+.popup-menu-item {
+    padding: 8px 12px;
+    transition-duration: 150ms;
+}
+
+/* ===== Prayer time (right-aligned) ===== */
 
 .next-prayer-menu-time {
     font-weight: bold;
+    font-size: 1em;
     margin-left: auto;
     padding-left: 24px;
 }
 
+/* ===== Iqama label ===== */
+
+.next-prayer-menu-iqama {
+    font-size: 0.8em;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ===== Active prayer (next prayer) ===== */
+
 .next-prayer-menu-active {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(120, 174, 237, 0.12);
+    border-radius: 8px;
+    border-left: 3px solid rgba(120, 174, 237, 0.8);
+    transition-duration: 200ms;
 }
 
 .next-prayer-menu-active .next-prayer-menu-time {
     color: #78aeed;
+    font-weight: bold;
 }
 
+.next-prayer-menu-active .next-prayer-menu-iqama {
+    color: rgba(120, 174, 237, 0.65);
+    background-color: rgba(120, 174, 237, 0.08);
+}
+
+/* ===== Past prayer (dimmed) ===== */
+
 .next-prayer-menu-past {
-    color: #888;
+    color: rgba(255, 255, 255, 0.35);
+    transition-duration: 150ms;
 }
 
 .next-prayer-menu-past .next-prayer-menu-time {
-    color: #888;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.next-prayer-menu-past .next-prayer-menu-iqama {
+    color: rgba(255, 255, 255, 0.2);
+    background-color: transparent;
+}
+
+/* ===== Error state ===== */
+
+.next-prayer-error {
+    color: #f5c542;
+    background-color: rgba(245, 197, 66, 0.08);
+    border-radius: 6px;
+    padding: 6px 12px;
 }

@@ -10,6 +10,11 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+const _VERSION = '1.0.0';
+const _TAG_PREFIX = 'gnome-v';
+const _RELEASES_URL = 'https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases';
+const _REPO_RELEASES_PAGE = 'https://github.com/Chanclatoen/next-prayer-mawaqit/releases';
+
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const PRAYER_ICONS = [
     'daytime-sunrise-symbolic',
@@ -19,6 +24,98 @@ const PRAYER_ICONS = [
     'weather-clear-night-symbolic',
 ];
 const SHURUQ_ICON = 'daytime-sunrise-symbolic';
+const API_BASE = 'https://mawaqit.net/api/2.0/mosque';
+
+const TRANSLATIONS = {
+    en: {
+        prayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
+        shuruq: 'Shuruq',
+        jumuah: 'Jumuah',
+        jumuah2: 'Jumuah 2',
+        configure: 'Configure mosque',
+        refresh: 'Refresh',
+        loading: 'Loading…',
+        noMosque: 'No mosque set',
+        parseError: 'Parse error',
+        error: 'Error',
+        notifTitle: (name, time) => `${name} - ${time}`,
+        notifBody: (name) => `It's time for ${name} prayer`,
+        couldNotReach: 'Could not reach mawaqit.net',
+        couldNotParse: 'Could not parse prayer data',
+        invalidUrl: 'Invalid URL',
+        usingCached: (err) => `Using cached data. ${err}`,
+        clickRetry: (err) => `${err} — click to retry`,
+        mosques: 'Mosques',
+        saveCurrent: 'Save current mosque',
+        updateAvailable: 'Update available',
+    },
+    ar: {
+        prayers: ['فجر', 'ظهر', 'عصر', 'مغرب', 'عشاء'],
+        shuruq: 'شروق',
+        jumuah: 'جمعة',
+        jumuah2: 'جمعة 2',
+        configure: 'إعداد المسجد',
+        refresh: 'تحديث',
+        loading: 'جارٍ التحميل…',
+        noMosque: 'لم يتم تعيين مسجد',
+        parseError: 'خطأ في التحليل',
+        error: 'خطأ',
+        notifTitle: (name, time) => `${name} - ${time}`,
+        notifBody: (name) => `حان وقت صلاة ${name}`,
+        couldNotReach: 'تعذر الاتصال بمواقيت',
+        couldNotParse: 'تعذر تحليل بيانات الصلاة',
+        invalidUrl: 'رابط غير صالح',
+        usingCached: (err) => `بيانات مخزنة. ${err}`,
+        clickRetry: (err) => `${err} — اضغط للمحاولة`,
+        mosques: 'المساجد',
+        saveCurrent: 'حفظ المسجد الحالي',
+        updateAvailable: 'تحديث متاح',
+    },
+    fr: {
+        prayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
+        shuruq: 'Shuruq',
+        jumuah: "Joumou'a",
+        jumuah2: "Joumou'a 2",
+        configure: 'Configurer la mosquée',
+        refresh: 'Actualiser',
+        loading: 'Chargement…',
+        noMosque: 'Aucune mosquée configurée',
+        parseError: 'Erreur d’analyse',
+        error: 'Erreur',
+        notifTitle: (name, time) => `${name} - ${time}`,
+        notifBody: (name) => `C'est l'heure de la prière de ${name}`,
+        couldNotReach: 'Impossible de joindre mawaqit.net',
+        couldNotParse: 'Impossible d’analyser les données',
+        invalidUrl: 'URL invalide',
+        usingCached: (err) => `Données en cache. ${err}`,
+        clickRetry: (err) => `${err} — cliquez pour réessayer`,
+        mosques: 'Mosquées',
+        saveCurrent: 'Sauvegarder la mosquée actuelle',
+        updateAvailable: 'Mise à jour disponible',
+    },
+    tr: {
+        prayers: ['Sabah', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'],
+        shuruq: 'Güneş',
+        jumuah: 'Cuma',
+        jumuah2: 'Cuma 2',
+        configure: 'Cami yapılandır',
+        refresh: 'Yenile',
+        loading: 'Yükleniyor…',
+        noMosque: 'Cami ayarlanmadı',
+        parseError: 'Ayrıştırma hatası',
+        error: 'Hata',
+        notifTitle: (name, time) => `${name} - ${time}`,
+        notifBody: (name) => `${name} namazı vakti geldi`,
+        couldNotReach: 'mawaqit.net\'e ulaşılamıyor',
+        couldNotParse: 'Namaz verileri ayrıştırılamadı',
+        invalidUrl: 'Geçersiz URL',
+        usingCached: (err) => `Önbellekten yüklendi. ${err}`,
+        clickRetry: (err) => `${err} — tekrar denemek için tıklayın`,
+        mosques: 'Camiler',
+        saveCurrent: 'Mevcut camiyi kaydet',
+        updateAvailable: 'Güncelleme mevcut',
+    },
+};
 
 export default class NextPrayerExtension extends Extension {
     _indicator = null;
@@ -29,12 +126,32 @@ export default class NextPrayerExtension extends Extension {
     _times = null;
     _shuruq = null;
     _mosqueName = null;
+    _iqama = null;
+    _iqamaEnabled = false;
+    _jumua = null;
+    _jumua2 = null;
     _settingsChangedId = null;
     _notificationTimers = [];
+    _notificationsChangedId = null;
+    _languageChangedId = null;
+    _adhanEnabledChangedId = null;
+    _adhanPathChangedId = null;
+    _countdownFormatChangedId = null;
+    _savedMosquesChangedId = null;
+    _lastError = null;
+    _isCached = false;
+    _gstPipeline = null;
+    _gstAvailable = false;
+    _gstModule = null;
+    _updateInfo = null;
+    _updateCheckTimer = null;
 
     enable() {
         this._settings = this.getSettings();
         this._session = new Soup.Session();
+
+        // Initialize GStreamer if available (async, non-blocking)
+        this._initGstreamer();
 
         this._indicator = new PanelMenu.Button(0.0, this.metadata.name, false);
 
@@ -76,9 +193,38 @@ export default class NextPrayerExtension extends Extension {
         this._settingsChangedId = this._settings.connect('changed::mosque-url', () => {
             this._fetchTimes();
         });
+        this._notificationsChangedId = this._settings.connect('changed::notifications-enabled', () => {
+            if (this._settings.get_boolean('notifications-enabled'))
+                this._scheduleNotifications();
+            else
+                this._clearNotificationTimers();
+        });
+        this._languageChangedId = this._settings.connect('changed::language', () => {
+            this._rebuildMenu();
+            this._updateLabel();
+        });
+        this._adhanEnabledChangedId = this._settings.connect('changed::adhan-enabled', () => {
+            this._scheduleNotifications();
+        });
+        this._adhanPathChangedId = this._settings.connect('changed::adhan-path', () => {
+            // No action needed until next prayer time
+        });
+        this._countdownFormatChangedId = this._settings.connect('changed::countdown-format', () => {
+            this._updateLabel();
+        });
+        this._savedMosquesChangedId = this._settings.connect('changed::saved-mosques', () => {
+            this._updateMosquesSubmenu();
+        });
 
+        this._loadCache();
         this._fetchTimes();
         this._startUpdateTimer();
+        this._checkForUpdate();
+        this._updateCheckTimer = GLib.timeout_add_seconds(
+            GLib.PRIORITY_DEFAULT, 86400, () => {
+                this._checkForUpdate();
+                return GLib.SOURCE_CONTINUE;
+            });
     }
 
     disable() {
@@ -94,7 +240,37 @@ export default class NextPrayerExtension extends Extension {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;
         }
+        if (this._notificationsChangedId) {
+            this._settings.disconnect(this._notificationsChangedId);
+            this._notificationsChangedId = null;
+        }
+        if (this._languageChangedId) {
+            this._settings.disconnect(this._languageChangedId);
+            this._languageChangedId = null;
+        }
+        if (this._adhanEnabledChangedId) {
+            this._settings.disconnect(this._adhanEnabledChangedId);
+            this._adhanEnabledChangedId = null;
+        }
+        if (this._adhanPathChangedId) {
+            this._settings.disconnect(this._adhanPathChangedId);
+            this._adhanPathChangedId = null;
+        }
+        if (this._countdownFormatChangedId) {
+            this._settings.disconnect(this._countdownFormatChangedId);
+            this._countdownFormatChangedId = null;
+        }
+        if (this._savedMosquesChangedId) {
+            this._settings.disconnect(this._savedMosquesChangedId);
+            this._savedMosquesChangedId = null;
+        }
+        if (this._updateCheckTimer) {
+            GLib.source_remove(this._updateCheckTimer);
+            this._updateCheckTimer = null;
+        }
+        this._updateInfo = null;
         this._clearNotificationTimers();
+        this._stopAdhan();
         this._indicator?.destroy();
         this._indicator = null;
         this._session = null;
@@ -102,17 +278,46 @@ export default class NextPrayerExtension extends Extension {
         this._times = null;
     }
 
+    async _initGstreamer() {
+        try {
+            const gstModule = (await import('gi://Gst')).default;
+            gstModule.init(null);
+            this._gstModule = gstModule;
+            this._gstAvailable = true;
+        } catch {
+            this._gstModule = null;
+            this._gstAvailable = false;
+        }
+    }
+
+    _t(key) {
+        const lang = this._settings.get_string('language') || 'en';
+        const table = TRANSLATIONS[lang] || TRANSLATIONS.en;
+        return table[key] !== undefined ? table[key] : (TRANSLATIONS.en[key] || key);
+    }
+
+    _rebuildMenu() {
+        this._indicator.menu.removeAll();
+        this._buildMenu();
+        this._updateMenu();
+    }
+
     _buildMenu() {
         this._mosqueLabel = new PopupMenu.PopupMenuItem('', {reactive: false});
         this._mosqueLabel.label.style_class = 'next-prayer-mosque-name';
         this._indicator.menu.addMenuItem(this._mosqueLabel);
+
+        this._errorItem = new PopupMenu.PopupImageMenuItem('', 'dialog-warning-symbolic');
+        this._errorItem.connect('activate', () => this._fetchTimes());
+        this._errorItem.visible = false;
+        this._indicator.menu.addMenuItem(this._errorItem);
 
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         this._menuItems = {};
         for (let i = 0; i < PRAYER_NAMES.length; i++) {
             const item = new PopupMenu.PopupImageMenuItem(
-                PRAYER_NAMES[i], PRAYER_ICONS[i]);
+                this._t('prayers')[i], PRAYER_ICONS[i]);
             item.setSensitive(false);
 
             const timeLabel = new St.Label({
@@ -122,33 +327,118 @@ export default class NextPrayerExtension extends Extension {
             });
             item.add_child(timeLabel);
 
+            const iqamaLabel = new St.Label({
+                text: '',
+                y_align: Clutter.ActorAlign.CENTER,
+                style_class: 'next-prayer-menu-iqama',
+            });
+            item.add_child(iqamaLabel);
+
             this._indicator.menu.addMenuItem(item);
-            this._menuItems[PRAYER_NAMES[i]] = {item, timeLabel};
+            this._menuItems[PRAYER_NAMES[i]] = {item, timeLabel, iqamaLabel};
         }
+
+        this._jumuaSeparator = new PopupMenu.PopupSeparatorMenuItem();
+        this._jumuaSeparator.visible = false;
+        this._indicator.menu.addMenuItem(this._jumuaSeparator);
+
+        this._jumua2Item = new PopupMenu.PopupImageMenuItem(this._t('jumuah2'), 'weather-clear-symbolic');
+        this._jumua2Item.setSensitive(false);
+        this._jumua2TimeLabel = new St.Label({
+            text: '',
+            y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'next-prayer-menu-time',
+        });
+        this._jumua2Item.add_child(this._jumua2TimeLabel);
+        this._jumua2Item.visible = false;
+        this._indicator.menu.addMenuItem(this._jumua2Item);
 
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        const shuruqItem = new PopupMenu.PopupImageMenuItem('Shuruq', SHURUQ_ICON);
-        shuruqItem.setSensitive(false);
+        this._shuruqItem = new PopupMenu.PopupImageMenuItem(this._t('shuruq'), SHURUQ_ICON);
+        this._shuruqItem.setSensitive(false);
         this._shuruqTimeLabel = new St.Label({
             text: '--:--',
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'next-prayer-menu-time',
         });
-        shuruqItem.add_child(this._shuruqTimeLabel);
-        this._indicator.menu.addMenuItem(shuruqItem);
+        this._shuruqItem.add_child(this._shuruqTimeLabel);
+        this._indicator.menu.addMenuItem(this._shuruqItem);
+
+        this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        // Mosques submenu
+        this._mosquesSubmenu = new PopupMenu.PopupSubMenuMenuItem(this._t('mosques'));
+        this._indicator.menu.addMenuItem(this._mosquesSubmenu);
+        this._updateMosquesSubmenu();
 
         this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         const settingsItem = new PopupMenu.PopupImageMenuItem(
-            'Configure mosque', 'emblem-system-symbolic');
+            this._t('configure'), 'emblem-system-symbolic');
         settingsItem.connect('activate', () => this.openPreferences());
         this._indicator.menu.addMenuItem(settingsItem);
 
         const refreshItem = new PopupMenu.PopupImageMenuItem(
-            'Refresh', 'view-refresh-symbolic');
+            this._t('refresh'), 'view-refresh-symbolic');
         refreshItem.connect('activate', () => this._fetchTimes());
         this._indicator.menu.addMenuItem(refreshItem);
+
+        if (this._updateInfo) {
+            this._indicator.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            const updateItem = new PopupMenu.PopupImageMenuItem(
+                `${this._t('updateAvailable')} (v${this._updateInfo.version})`,
+                'software-update-available-symbolic');
+            updateItem.connect('activate', () => {
+                Gio.AppInfo.launch_default_for_uri(this._updateInfo.url, null);
+            });
+            this._indicator.menu.addMenuItem(updateItem);
+        }
+    }
+
+    _updateMosquesSubmenu() {
+        this._mosquesSubmenu.menu.removeAll();
+
+        const savedMosques = this._getSavedMosques();
+
+        for (const mosque of savedMosques) {
+            const mosqueItem = new PopupMenu.PopupMenuItem(mosque.name || mosque.url);
+            mosqueItem.connect('activate', () => {
+                this._settings.set_string('mosque-url', mosque.url);
+            });
+            this._mosquesSubmenu.menu.addMenuItem(mosqueItem);
+        }
+
+        if (savedMosques.length > 0)
+            this._mosquesSubmenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        const saveItem = new PopupMenu.PopupMenuItem(this._t('saveCurrent'));
+        saveItem.connect('activate', () => {
+            this._saveCurrentMosque();
+        });
+        this._mosquesSubmenu.menu.addMenuItem(saveItem);
+    }
+
+    _getSavedMosques() {
+        try {
+            return JSON.parse(this._settings.get_string('saved-mosques') || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    _saveCurrentMosque() {
+        const url = this._settings.get_string('mosque-url');
+        if (!url) return;
+
+        const name = this._mosqueName || url;
+        const mosques = this._getSavedMosques();
+
+        // Don't add duplicates
+        if (mosques.some(m => m.url === url)) return;
+
+        mosques.push({url, name});
+        this._settings.set_string('saved-mosques', JSON.stringify(mosques));
     }
 
     _startUpdateTimer() {
@@ -161,21 +451,166 @@ export default class NextPrayerExtension extends Extension {
         });
     }
 
+    _checkForUpdate() {
+        const message = Soup.Message.new('GET', _RELEASES_URL);
+        if (!message) return;
+
+        this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+            try {
+                const bytes = session.send_and_read_finish(result);
+                if (message.get_status() !== Soup.Status.OK) return;
+
+                const json = new TextDecoder().decode(bytes.get_data());
+                const releases = JSON.parse(json);
+                if (!Array.isArray(releases)) return;
+
+                for (const release of releases) {
+                    const tag = release.tag_name || '';
+                    if (!tag.startsWith(_TAG_PREFIX)) continue;
+
+                    const latest = tag.slice(_TAG_PREFIX.length);
+                    const currentParts = _VERSION.split('.').map(Number);
+                    const latestParts = latest.split('.').map(Number);
+
+                    let newer = false;
+                    for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+                        const c = currentParts[i] || 0;
+                        const l = latestParts[i] || 0;
+                        if (l > c) { newer = true; break; }
+                        if (l < c) break;
+                    }
+
+                    if (newer) {
+                        this._updateInfo = {
+                            version: latest,
+                            url: release.html_url || _REPO_RELEASES_PAGE,
+                        };
+                        this._rebuildMenu();
+                    }
+                    return; // Only check the first matching release
+                }
+            } catch {
+                // Silently ignore update check errors
+            }
+        });
+    }
+
     _slugFromUrl(url) {
         if (!url) return null;
         const match = url.match(/mawaqit\.net\/\w+\/(?:w\/)?(.+?)\/?$/);
         return match ? match[1] : null;
     }
 
+    _isFriday() {
+        return GLib.DateTime.new_now_local().get_day_of_week() === 5;
+    }
+
+    _displayNames() {
+        const prayerNames = this._t('prayers');
+        const names = [...prayerNames];
+        if (this._isFriday() && this._jumua)
+            names[1] = this._t('jumuah');
+        return names;
+    }
+
+    _displayTimes() {
+        if (!this._times) return null;
+        const times = [...this._times];
+        if (this._isFriday() && this._jumua)
+            times[1] = this._jumua;
+        return times;
+    }
+
+    _resolveIqama(prayerTime, iqamaValue) {
+        if (!iqamaValue) return null;
+        const val = String(iqamaValue).trim();
+        if (val === '0' || val === '+0' || val === '') return null;
+        if (val.includes(':')) return val;
+        const offset = parseInt(val.replace('+', ''));
+        if (isNaN(offset) || offset <= 0) return null;
+        const total = this._toMinutes(prayerTime) + offset;
+        const h = Math.floor(total / 60) % 24;
+        const m = total % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+
     _fetchTimes() {
         const url = this._settings.get_string('mosque-url');
         if (!url) {
-            this._prayerLabel.set_text('No mosque set');
+            this._prayerLabel.set_text(this._t('noMosque'));
             this._timeLabel.set_text('');
             this._countdownLabel.set_text('');
             return;
         }
 
+        const slug = this._slugFromUrl(url);
+        if (slug) {
+            this._fetchTimesApi(slug, () => {
+                this._fetchTimesHtml(url);
+            });
+        } else {
+            this._fetchTimesHtml(url);
+        }
+    }
+
+    _fetchTimesApi(slug, fallback) {
+        const apiUrl = `${API_BASE}/search?word=${slug}`;
+        const message = Soup.Message.new('GET', apiUrl);
+        if (!message) {
+            fallback();
+            return;
+        }
+        message.get_request_headers().append('Accept', 'application/json');
+
+        this._prayerLabel.set_text(this._t('loading'));
+        this._timeLabel.set_text('');
+        this._countdownLabel.set_text('');
+
+        this._session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, null, (session, result) => {
+            try {
+                const bytes = session.send_and_read_finish(result);
+                if (message.get_status() !== Soup.Status.OK) {
+                    fallback();
+                    return;
+                }
+
+                const json = new TextDecoder().decode(bytes.get_data());
+                const results = JSON.parse(json);
+                if (!Array.isArray(results) || results.length === 0) {
+                    fallback();
+                    return;
+                }
+
+                const mosque = results[0];
+                const apiTimes = mosque.times;
+                if (!apiTimes || apiTimes.length < 6) {
+                    fallback();
+                    return;
+                }
+
+                this._times = [apiTimes[0], apiTimes[2], apiTimes[3], apiTimes[4], apiTimes[5]];
+                this._shuruq = apiTimes[1] || null;
+                this._mosqueName = mosque.name || mosque.label || '';
+                this._iqama = mosque.iqama || null;
+                this._iqamaEnabled = mosque.iqamaEnabled || false;
+                this._jumua = mosque.jumua || null;
+                this._jumua2 = mosque.jumua2 || null;
+
+                this._isCached = false;
+                this._lastError = null;
+                this._saveCache();
+                this._scheduleNotifications();
+                this._updateLabel();
+                this._updateMenu();
+                this._scheduleDailyRefresh();
+            } catch (e) {
+                logError(e, 'NextPrayer: API fetch error, falling back to HTML');
+                fallback();
+            }
+        });
+    }
+
+    _fetchTimesHtml(url) {
         let fetchUrl = url;
         if (!fetchUrl.includes('/w/')) {
             const slug = this._slugFromUrl(fetchUrl);
@@ -185,11 +620,11 @@ export default class NextPrayerExtension extends Extension {
 
         const message = Soup.Message.new('GET', fetchUrl);
         if (!message) {
-            this._prayerLabel.set_text('Invalid URL');
+            this._handleFetchError(this._t('invalidUrl'));
             return;
         }
 
-        this._prayerLabel.set_text('Loading…');
+        this._prayerLabel.set_text(this._t('loading'));
         this._timeLabel.set_text('');
         this._countdownLabel.set_text('');
 
@@ -197,21 +632,22 @@ export default class NextPrayerExtension extends Extension {
             try {
                 const bytes = session.send_and_read_finish(result);
                 if (message.get_status() !== Soup.Status.OK) {
-                    this._prayerLabel.set_text('Fetch error');
-                    this._scheduleFetchRetry();
+                    this._handleFetchError(this._t('couldNotReach'));
                     return;
                 }
 
                 const html = new TextDecoder().decode(bytes.get_data());
                 this._parseConfData(html);
+                this._isCached = false;
+                this._lastError = null;
+                this._saveCache();
                 this._scheduleNotifications();
                 this._updateLabel();
                 this._updateMenu();
                 this._scheduleDailyRefresh();
             } catch (e) {
-                logError(e, 'NextPrayer: fetch error');
-                this._prayerLabel.set_text('Error');
-                this._scheduleFetchRetry();
+                logError(e, 'NextPrayer: HTML fetch error');
+                this._handleFetchError(this._t('couldNotParse'));
             }
         });
     }
@@ -219,7 +655,7 @@ export default class NextPrayerExtension extends Extension {
     _parseConfData(html) {
         const match = html.match(/confData\s*=\s*(\{.*?\});/s);
         if (!match) {
-            this._prayerLabel.set_text('Parse error');
+            this._prayerLabel.set_text(this._t('parseError'));
             return;
         }
 
@@ -230,7 +666,7 @@ export default class NextPrayerExtension extends Extension {
             this._mosqueName = data.name || data.label || '';
         } catch (e) {
             logError(e, 'NextPrayer: JSON parse error');
-            this._prayerLabel.set_text('Parse error');
+            this._prayerLabel.set_text(this._t('parseError'));
         }
     }
 
@@ -240,17 +676,37 @@ export default class NextPrayerExtension extends Extension {
         if (this._mosqueName)
             this._mosqueLabel.label.set_text(this._mosqueName);
 
+        if (this._lastError) {
+            const msg = this._isCached
+                ? this._t('usingCached')(this._lastError)
+                : this._t('clickRetry')(this._lastError);
+            this._errorItem.label.set_text(msg);
+            this._errorItem.visible = true;
+        } else {
+            this._errorItem.visible = false;
+        }
+
         const now = GLib.DateTime.new_now_local();
         const nowMinutes = now.get_hour() * 60 + now.get_minute();
+        const displayTimes = this._displayTimes();
+        const displayNames = this._displayNames();
 
         for (let i = 0; i < PRAYER_NAMES.length; i++) {
-            const name = PRAYER_NAMES[i];
-            const entry = this._menuItems[name];
+            const entry = this._menuItems[PRAYER_NAMES[i]];
             if (!entry) continue;
 
-            entry.timeLabel.set_text(this._times[i] || '--:--');
+            const displayTime = displayTimes ? displayTimes[i] : '--:--';
+            entry.timeLabel.set_text(displayTime || '--:--');
+            entry.item.label.set_text(displayNames[i]);
 
-            const m = this._toMinutes(this._times[i]);
+            if (this._iqamaEnabled && this._iqama && i < this._iqama.length) {
+                const iqTime = this._resolveIqama(this._times[i], this._iqama[i]);
+                entry.iqamaLabel.set_text(iqTime ? `Iq ${iqTime}` : '');
+            } else {
+                entry.iqamaLabel.set_text('');
+            }
+
+            const m = this._toMinutes(displayTime || '00:00');
             const isNext = this._findNextPrayerIndex(nowMinutes) === i;
             const isPast = m <= nowMinutes;
 
@@ -263,6 +719,16 @@ export default class NextPrayerExtension extends Extension {
             }
         }
 
+        const showJumua2 = this._isFriday() && this._jumua2;
+        this._jumua2Item.visible = showJumua2;
+        this._jumuaSeparator.visible = showJumua2;
+        if (showJumua2) {
+            this._jumua2Item.label.set_text(this._t('jumuah2'));
+            this._jumua2TimeLabel.set_text(this._jumua2);
+        }
+
+        // Update shuruq label text for language
+        this._shuruqItem.label.set_text(this._t('shuruq'));
         if (this._shuruq)
             this._shuruqTimeLabel.set_text(this._shuruq);
     }
@@ -273,18 +739,27 @@ export default class NextPrayerExtension extends Extension {
     }
 
     _findNextPrayerIndex(nowMinutes) {
-        for (let i = 0; i < this._times.length; i++) {
-            if (this._toMinutes(this._times[i]) > nowMinutes)
+        const displayTimes = this._displayTimes();
+        if (!displayTimes) return -1;
+        for (let i = 0; i < displayTimes.length; i++) {
+            if (this._toMinutes(displayTimes[i]) > nowMinutes)
                 return i;
         }
         return -1;
     }
 
     _formatCountdown(remaining) {
+        const format = this._settings.get_string('countdown-format') || 'compact';
         const h = Math.floor(remaining / 60);
         const min = remaining % 60;
+        if (format === 'full') {
+            if (h > 0)
+                return `-${h}h ${min.toString().padStart(2, '0')}m`;
+            return `-${min}m`;
+        }
+        // compact (default)
         if (h > 0)
-            return `-${h}h ${min.toString().padStart(2, '0')}m`;
+            return `-${h}h${min.toString().padStart(2, '0')}m`;
         return `-${min}m`;
     }
 
@@ -294,18 +769,20 @@ export default class NextPrayerExtension extends Extension {
         const now = GLib.DateTime.new_now_local();
         const nowMinutes = now.get_hour() * 60 + now.get_minute();
         const nextIdx = this._findNextPrayerIndex(nowMinutes);
+        const displayTimes = this._displayTimes();
+        const displayNames = this._displayNames();
 
         let name, time, remaining;
 
         if (nextIdx === -1) {
-            name = PRAYER_NAMES[0];
-            time = this._times[0];
-            remaining = (24 * 60 - nowMinutes) + this._toMinutes(this._times[0]);
+            name = displayNames[0];
+            time = displayTimes[0];
+            remaining = (24 * 60 - nowMinutes) + this._toMinutes(displayTimes[0]);
             this._icon.icon_name = PRAYER_ICONS[0];
         } else {
-            name = PRAYER_NAMES[nextIdx];
-            time = this._times[nextIdx];
-            remaining = this._toMinutes(this._times[nextIdx]) - nowMinutes;
+            name = displayNames[nextIdx];
+            time = displayTimes[nextIdx];
+            remaining = this._toMinutes(displayTimes[nextIdx]) - nowMinutes;
             this._icon.icon_name = PRAYER_ICONS[nextIdx];
         }
 
@@ -325,19 +802,23 @@ export default class NextPrayerExtension extends Extension {
     _scheduleNotifications() {
         this._clearNotificationTimers();
         if (!this._times) return;
+        if (!this._settings.get_boolean('notifications-enabled')) return;
 
         const now = GLib.DateTime.new_now_local();
         const nowSeconds = now.get_hour() * 3600 + now.get_minute() * 60 + now.get_second();
+        const displayTimes = this._displayTimes();
+        const displayNames = this._displayNames();
 
-        for (let i = 0; i < this._times.length; i++) {
-            const prayerSeconds = this._toMinutes(this._times[i]) * 60;
+        for (let i = 0; i < displayTimes.length; i++) {
+            const prayerSeconds = this._toMinutes(displayTimes[i]) * 60;
             const delay = prayerSeconds - nowSeconds;
             if (delay <= 0) continue;
 
-            const name = PRAYER_NAMES[i];
-            const time = this._times[i];
+            const name = displayNames[i];
+            const time = displayTimes[i];
             const id = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
                 this._sendNotification(name, time);
+                this._maybePlayAdhan();
                 this._updateLabel();
                 return GLib.SOURCE_REMOVE;
             });
@@ -346,15 +827,76 @@ export default class NextPrayerExtension extends Extension {
     }
 
     _sendNotification(prayerName, time) {
+        const title = this._t('notifTitle')(prayerName, time);
+        const body = this._t('notifBody')(prayerName);
         const source = MessageTray.getSystemSource();
         const notification = new MessageTray.Notification({
             source,
-            title: `${prayerName} - ${time}`,
-            body: `It's time for ${prayerName} prayer`,
+            title,
+            body,
             iconName: 'preferences-system-time-symbolic',
         });
         notification.urgency = MessageTray.Urgency.HIGH;
         source.addNotification(notification);
+    }
+
+    _maybePlayAdhan() {
+        if (!this._gstAvailable) return;
+        if (!this._settings.get_boolean('adhan-enabled')) return;
+        const path = this._settings.get_string('adhan-path');
+        if (!path) return;
+
+        const file = Gio.File.new_for_path(path);
+        if (!file.query_exists(null)) return;
+
+        this._playAdhan(path);
+    }
+
+    _playAdhan(filePath) {
+        this._stopAdhan();
+
+        const Gst = this._gstModule;
+        if (!Gst) return;
+
+        try {
+            this._gstPipeline = Gst.ElementFactory.make('playbin', 'adhan-player');
+            if (!this._gstPipeline) return;
+
+            const fileUri = Gio.File.new_for_path(filePath).get_uri();
+            this._gstPipeline.set_property('uri', fileUri);
+
+            const bus = this._gstPipeline.get_bus();
+            bus.add_signal_watch();
+            this._gstBusWatchId = bus.connect('message', (_bus, msg) => {
+                if (msg.type === Gst.MessageType.EOS || msg.type === Gst.MessageType.ERROR) {
+                    this._stopAdhan();
+                }
+            });
+
+            this._gstPipeline.set_state(Gst.State.PLAYING);
+        } catch (e) {
+            logError(e, 'NextPrayer: Failed to play adhan');
+            this._stopAdhan();
+        }
+    }
+
+    _stopAdhan() {
+        if (this._gstPipeline) {
+            const Gst = this._gstModule;
+            try {
+                const bus = this._gstPipeline.get_bus();
+                if (bus && this._gstBusWatchId) {
+                    bus.disconnect(this._gstBusWatchId);
+                    bus.remove_signal_watch();
+                }
+                if (Gst)
+                    this._gstPipeline.set_state(Gst.State.NULL);
+            } catch {
+                // Ignore cleanup errors
+            }
+            this._gstPipeline = null;
+            this._gstBusWatchId = null;
+        }
     }
 
     _scheduleDailyRefresh() {
@@ -371,6 +913,59 @@ export default class NextPrayerExtension extends Extension {
             this._fetchTimes();
             return GLib.SOURCE_REMOVE;
         });
+    }
+
+    _saveCache() {
+        if (!this._times) return;
+        const cache = JSON.stringify({
+            times: this._times,
+            shuruq: this._shuruq,
+            name: this._mosqueName,
+            iqama: this._iqama,
+            iqamaEnabled: this._iqamaEnabled,
+            jumua: this._jumua,
+            jumua2: this._jumua2,
+            date: new Date().toISOString().split('T')[0],
+        });
+        this._settings.set_string('cached-data', cache);
+    }
+
+    _loadCache() {
+        const raw = this._settings.get_string('cached-data');
+        if (!raw) return false;
+        try {
+            const data = JSON.parse(raw);
+            if (!data.times || !data.times.length) return false;
+            this._times = data.times;
+            this._shuruq = data.shuruq || null;
+            this._mosqueName = data.name || '';
+            this._iqama = data.iqama || null;
+            this._iqamaEnabled = data.iqamaEnabled || false;
+            this._jumua = data.jumua || null;
+            this._jumua2 = data.jumua2 || null;
+            this._isCached = true;
+            this._updateLabel();
+            this._updateMenu();
+            this._scheduleNotifications();
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    _handleFetchError(message) {
+        this._lastError = message;
+        if (!this._times)
+            this._loadCache();
+        if (this._times) {
+            this._updateLabel();
+        } else {
+            this._prayerLabel.set_text(this._t('error'));
+            this._timeLabel.set_text('');
+            this._countdownLabel.set_text('');
+        }
+        this._updateMenu();
+        this._scheduleFetchRetry();
     }
 
     _scheduleFetchRetry() {

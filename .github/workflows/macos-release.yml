@@ -24,8 +24,47 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Import signing certificate
+        if: env.CERTIFICATE_BASE64 != ''
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+        run: |
+          CERT_FILE=$(mktemp /tmp/cert.XXXXXX.p12)
+          echo "$CERTIFICATE_BASE64" | base64 --decode > "$CERT_FILE"
+          KEYCHAIN="build.keychain"
+          security create-keychain -p "" "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+          security unlock-keychain -p "" "$KEYCHAIN"
+          security import "$CERT_FILE" -k "$KEYCHAIN" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
+          rm "$CERT_FILE"
+
       - name: Build and package
+        env:
+          CODE_SIGN_IDENTITY: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 && 'Developer ID Application' || '-' }}
         run: ./scripts/build-release.sh
+
+      - name: Notarize app
+        if: env.APPLE_ID != ''
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APP_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          ZIP_FILE=$(ls dist/*.zip)
+          xcrun notarytool submit "$ZIP_FILE" \
+            --apple-id "$APPLE_ID" \
+            --password "$APP_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait
+
+          APP_PATH="build/Build/Products/Release/NextPrayer.app"
+          xcrun stapler staple "$APP_PATH"
+
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist")
+          rm "$ZIP_FILE"
+          ditto -c -k --keepParent "$APP_PATH" "dist/NextPrayer-macOS-v${VERSION}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
