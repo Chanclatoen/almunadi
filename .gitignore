@@ -4,6 +4,10 @@ schemas/gschemas.compiled
 # macOS
 .DS_Store
 
+# Python
+__pycache__/
+*.pyc
+
 # Xcode / NextPrayerMac
 NextPrayerMac/build/
 NextPrayerMac/dist/

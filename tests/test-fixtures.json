@@ -1,0 +1,72 @@
+{
+  "slug_extraction": [
+    {"input": "https://mawaqit.net/en/w/arrahmaan-dordrecht", "expected": "arrahmaan-dordrecht"},
+    {"input": "https://mawaqit.net/en/arrahmaan-dordrecht", "expected": "arrahmaan-dordrecht"},
+    {"input": "https://mawaqit.net/fr/w/my-mosque/", "expected": "my-mosque"},
+    {"input": "https://example.com/mosque", "expected": null},
+    {"input": "", "expected": null}
+  ],
+  "to_minutes": [
+    {"input": "00:00", "expected": 0},
+    {"input": "12:30", "expected": 750},
+    {"input": "23:59", "expected": 1439},
+    {"input": "05:30", "expected": 330}
+  ],
+  "next_prayer_index": {
+    "times": ["05:30", "12:30", "16:00", "20:30", "22:00"],
+    "cases": [
+      {"now_minutes": 300, "expected": 0, "description": "before Fajr"},
+      {"now_minutes": 330, "expected": 1, "description": "exactly at Fajr (should return next)"},
+      {"now_minutes": 720, "expected": 1, "description": "noon, before Dhuhr"},
+      {"now_minutes": 750, "expected": 2, "description": "exactly at Dhuhr"},
+      {"now_minutes": 1000, "expected": 3, "description": "between Asr and Maghrib"},
+      {"now_minutes": 1350, "expected": 4, "description": "before Isha"},
+      {"now_minutes": 1400, "expected": -1, "description": "after all prayers"}
+    ]
+  },
+  "format_countdown": {
+    "compact": [
+      {"remaining_minutes": 150, "expected": "-2h30m"},
+      {"remaining_minutes": 15, "expected": "-15m"},
+      {"remaining_minutes": 60, "expected": "-1h00m"},
+      {"remaining_minutes": 1, "expected": "-1m"}
+    ],
+    "full": [
+      {"remaining_minutes": 150, "expected": "-2h 30m"},
+      {"remaining_minutes": 15, "expected": "-15m"},
+      {"remaining_minutes": 60, "expected": "-1h 00m"},
+      {"remaining_minutes": 1, "expected": "-1m"}
+    ]
+  },
+  "resolve_iqama": [
+    {"prayer_time": "12:30", "iqama_value": "+15", "expected": "12:45"},
+    {"prayer_time": "12:30", "iqama_value": "15", "expected": "12:45"},
+    {"prayer_time": "12:30", "iqama_value": "13:00", "expected": "13:00"},
+    {"prayer_time": "12:30", "iqama_value": "+0", "expected": null},
+    {"prayer_time": "12:30", "iqama_value": "0", "expected": null},
+    {"prayer_time": "12:30", "iqama_value": null, "expected": null},
+    {"prayer_time": "12:30", "iqama_value": "", "expected": null},
+    {"prayer_time": "12:50", "iqama_value": "+20", "expected": "13:10"}
+  ],
+  "confdata_html": {
+    "valid": "var confData = {\"times\":[\"05:30\",\"12:30\",\"16:00\",\"20:30\",\"22:00\"],\"shuruq\":\"06:45\",\"name\":\"Test Mosque\"};",
+    "expected_times": ["05:30", "12:30", "16:00", "20:30", "22:00"],
+    "expected_shuruq": "06:45",
+    "expected_name": "Test Mosque",
+    "invalid": "<html>No confData here</html>"
+  },
+  "translations": {
+    "supported_languages": ["en", "ar", "fr", "tr"],
+    "prayer_names": {
+      "en": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"],
+      "ar": ["فجر", "ظهر", "عصر", "مغرب", "عشاء"],
+      "fr": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"],
+      "tr": ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"]
+    },
+    "required_keys": [
+      "prayer_fajr", "prayer_dhuhr", "prayer_asr", "prayer_maghrib", "prayer_isha",
+      "prayer_shuruq", "prayer_jumuah", "next_prayer", "refresh", "settings", "quit",
+      "notifications", "notification_body", "search", "save"
+    ]
+  }
+}

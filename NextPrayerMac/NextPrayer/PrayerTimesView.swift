@@ -5,61 +5,184 @@ struct PrayerTimesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if !service.mosqueName.isEmpty {
-                Text(service.mosqueName)
-                    .font(.headline)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 8)
+            // Update available banner
+            if let update = service.updateInfo {
+                Button {
+                    if let url = URL(string: update.url) {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 11))
+                        Text("\(t("update_available")) — v\(update.version)")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .foregroundStyle(.white)
+                    .background(Color.blue)
+                }
+                .buttonStyle(.plain)
             }
 
-            Divider()
+            // Mosque name header
+            if !service.mosqueName.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(service.mosqueName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
 
+                    // Cached indicator (inline with header)
+                    if service.isCached {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 9))
+                            Text(t("using_cached_data"))
+                                .font(.system(size: 10))
+                        }
+                        .foregroundStyle(.orange.opacity(0.8))
+                        .padding(.horizontal, 16)
+                    }
+
+                    Divider()
+                        .padding(.top, 6)
+                }
+            }
+
+            // Mosque switcher
+            if !service.savedMosques.isEmpty {
+                Menu {
+                    ForEach(service.savedMosques) { mosque in
+                        Button(mosque.name.isEmpty ? mosque.url : mosque.name) {
+                            service.switchToMosque(mosque)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "building.2")
+                            .font(.system(size: 10))
+                        Text(t("switch_to"))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.quaternary.opacity(0.5))
+                    .clipShape(Capsule())
+                }
+                .menuStyle(.borderlessButton)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+
+                Divider()
+            }
+
+            // Prayer rows
             ForEach(service.prayers) { prayer in
                 PrayerRow(
                     prayer: prayer,
-                    isNext: service.nextPrayer?.name == prayer.name && prayer.date > Date()
+                    isNext: service.nextPrayer?.name == prayer.name && prayer.date > Date(),
+                    countdownFormat: service.countdownFormat
                 )
             }
 
-            if let shuruq = service.shuruq {
-                Divider().padding(.vertical, 2)
+            // Jumua 2
+            if let jumua2 = service.jumua2 {
                 HStack {
-                    Image(systemName: "sunrise")
+                    Image(systemName: "sun.max")
                         .foregroundStyle(.secondary)
                         .frame(width: 20)
-                    Text("Shuruq")
+                    Text(t("jumuah2"))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text(shuruq)
+                    Text(jumua2)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 6)
+                .padding(.vertical, 8)
+            }
+
+            // Shuruq row
+            if let shuruq = service.shuruq {
+                Divider().padding(.vertical, 2)
+                HStack {
+                    Image(systemName: "sunrise")
+                        .foregroundStyle(.orange.opacity(0.75))
+                        .frame(width: 20)
+                    Text(t("shuruq"))
+                        .foregroundStyle(.orange.opacity(0.75))
+                        .fontWeight(.medium)
+                    Spacer()
+                    Text(shuruq)
+                        .foregroundStyle(.orange.opacity(0.65))
+                        .monospacedDigit()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
 
             Divider().padding(.vertical, 2)
 
+            // Error banner
             if let error = service.lastError {
-                Label(error, systemImage: "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 4)
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                    Text(error)
+                        .font(.system(size: 11))
+                        .lineLimit(2)
+                    Spacer()
+                    Button {
+                        service.fetchTimes()
+                    } label: {
+                        Text(t("retry"))
+                            .font(.system(size: 10, weight: .medium))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(.orange.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .foregroundStyle(.orange)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.orange.opacity(0.06))
             }
 
-            HStack {
+            // Bottom action bar
+            HStack(spacing: 12) {
                 Button {
                     service.fetchTimes()
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 10))
+                        Text(t("refresh"))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.quaternary.opacity(0.4))
+                    .clipShape(Capsule())
                 }
+                .buttonStyle(.plain)
 
                 Spacer()
 
                 SettingsLink {
-                    Label("Settings", systemImage: "gear")
+                    HStack(spacing: 4) {
+                        Image(systemName: "gear")
+                            .font(.system(size: 10))
+                        Text(t("settings"))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(.quaternary.opacity(0.4))
+                    .clipShape(Capsule())
                 }
             }
             .padding(.horizontal, 16)
@@ -67,48 +190,87 @@ struct PrayerTimesView: View {
 
             Divider()
 
-            Button("Quit") {
+            Button {
                 NSApplication.shared.terminate(nil)
+            } label: {
+                HStack {
+                    Spacer()
+                    Text(t("quit"))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .buttonStyle(.plain)
+            .padding(.vertical, 6)
         }
-        .frame(width: 260)
+        .frame(width: 300)
     }
 }
 
 struct PrayerRow: View {
     let prayer: PrayerTime
     let isNext: Bool
+    var countdownFormat: String = "compact"
 
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: prayer.icon)
-                .foregroundStyle(isNext ? AnyShapeStyle(.blue) : isPast ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+                .font(.system(size: 13))
+                .foregroundStyle(isNext ? AnyShapeStyle(.blue) : isPast ? AnyShapeStyle(.secondary.opacity(0.5)) : AnyShapeStyle(.secondary))
                 .frame(width: 20)
 
-            Text(prayer.name.rawValue)
-                .fontWeight(isNext ? .semibold : .regular)
-                .foregroundStyle(isPast ? .tertiary : .primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(prayer.displayName)
+                    .font(.system(size: 13, weight: isNext ? .semibold : .regular))
+                    .foregroundStyle(isPast ? .secondary.opacity(0.6) : .primary)
+
+                if let iqama = prayer.iqamaTime {
+                    HStack(spacing: 3) {
+                        Text("Iq")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(isNext ? .blue.opacity(0.6) : .secondary.opacity(0.6))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(
+                                isNext
+                                    ? AnyShapeStyle(Color.blue.opacity(0.08))
+                                    : AnyShapeStyle(Color.secondary.opacity(0.08))
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                        Text(iqama)
+                            .font(.system(size: 10))
+                            .italic()
+                            .foregroundStyle(isNext ? .blue.opacity(0.6) : .secondary.opacity(0.6))
+                    }
+                }
+            }
 
             Spacer()
 
             if isNext {
                 Text(countdown)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.blue.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.06))
+                    .clipShape(Capsule())
             }
 
             Text(prayer.time)
-                .monospacedDigit()
+                .font(.system(size: 13, design: .monospaced))
                 .fontWeight(isNext ? .semibold : .regular)
-                .foregroundStyle(isNext ? AnyShapeStyle(.blue) : isPast ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                .foregroundStyle(isNext ? AnyShapeStyle(.blue) : isPast ? AnyShapeStyle(.secondary.opacity(0.5)) : AnyShapeStyle(.primary))
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .background(isNext ? Color.blue.opacity(0.08) : .clear)
-        .cornerRadius(6)
+        .padding(.vertical, 8)
+        .background(
+            isNext
+                ? Color.blue.opacity(0.1)
+                : .clear
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private var isPast: Bool {
@@ -121,7 +283,10 @@ struct PrayerRow: View {
         let h = remaining / 60
         let m = remaining % 60
         if h > 0 {
-            return "-\(h)h \(String(format: "%02d", m))m"
+            if countdownFormat == "full" {
+                return "-\(h)h \(String(format: "%02d", m))m"
+            }
+            return "-\(h)h\(String(format: "%02d", m))m"
         }
         return "-\(m)m"
     }

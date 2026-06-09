@@ -3,18 +3,17 @@ import re
 import json
 import threading
 import time
-import ctypes
-import winsound
+import subprocess
+import shutil
 from datetime import datetime, timedelta, date
 
 import requests
 import pystray
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-from winotify import Notification, audio
+from PIL import Image, ImageDraw, ImageFont
 
 APP_NAME = "Next Prayer (Mawaqit)"
 APP_VERSION = "1.0.0"
-TAG_PREFIX = "win-v"
+TAG_PREFIX = "linux-v"
 RELEASES_URL = "https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases"
 REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/next-prayer-mawaqit/releases"
 PRAYER_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
@@ -28,20 +27,12 @@ PRAYER_ICONS = {
 }
 API_BASE = "https://mawaqit.net/api/2.0/mosque"
 
-APP_DATA_DIR = os.path.join(
-    os.environ.get("APPDATA", os.path.expanduser("~")), "NextPrayer"
-)
+# XDG-compliant config directory
+_XDG_CONFIG = os.environ.get("XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config"))
+APP_DATA_DIR = os.path.join(_XDG_CONFIG, "NextPrayer")
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 SETTINGS_FILE = os.path.join(APP_DATA_DIR, "settings.json")
 CACHE_FILE = os.path.join(APP_DATA_DIR, "cache.json")
-
-_OLD_SETTINGS = "next_prayer_settings.json"
-if os.path.exists(_OLD_SETTINGS) and not os.path.exists(SETTINGS_FILE):
-    try:
-        import shutil
-        shutil.copy2(_OLD_SETTINGS, SETTINGS_FILE)
-    except Exception:
-        pass
 
 PRAYER_COLORS = {
     "Fajr": "#FFB74D",
@@ -69,12 +60,7 @@ TEXT_PRIMARY = "#e8e8e8"
 TEXT_SECONDARY = "#8899aa"
 TEXT_DIM = "#556677"
 HIGHLIGHT_BG = "#1e3a5f"
-SHURUQ_ACCENT = "#d4a04a"
-ERROR_BG = "#3d2b1a"
-ERROR_BORDER = "#c47a30"
-IQAMA_DOT = "#5ec46b"
-BORDER_COLOR = "#3a5a8a"
-FONT_FAMILY = "Segoe UI"
+FONT_FAMILY = "DejaVu Sans"
 
 
 # ---------------------------------------------------------------------------
@@ -576,72 +562,109 @@ def check_for_update(current_version, tag_prefix):
 # Tray icon rendering
 # ---------------------------------------------------------------------------
 
+def _find_font(size):
+    """Try to locate a TrueType font available on Linux."""
+    font_names = [
+        "DejaVuSans.ttf",
+        "DejaVuSans-Bold.ttf",
+        "LiberationSans-Regular.ttf",
+        "NotoSans-Regular.ttf",
+        "FreeSans.ttf",
+        "Ubuntu-R.ttf",
+    ]
+    font_dirs = [
+        "/usr/share/fonts/truetype/dejavu",
+        "/usr/share/fonts/truetype/liberation",
+        "/usr/share/fonts/truetype/noto",
+        "/usr/share/fonts/truetype/freefont",
+        "/usr/share/fonts/truetype/ubuntu",
+        "/usr/share/fonts/TTF",
+        "/usr/share/fonts",
+    ]
+    for d in font_dirs:
+        for name in font_names:
+            path = os.path.join(d, name)
+            if os.path.isfile(path):
+                try:
+                    return ImageFont.truetype(path, size)
+                except OSError:
+                    continue
+    return ImageFont.load_default()
+
+
 def create_icon_image(prayer_name):
     color = PRAYER_COLORS_RGB.get(prayer_name, (200, 200, 200))
-    # Render at high resolution for smooth anti-aliasing
-    render_size = 256
-    img = Image.new("RGBA", (render_size, render_size), (0, 0, 0, 0))
+    size = 128
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    margin = render_size // 16  # 16px at 256
-
-    # Draw a subtle drop shadow behind the main circle
-    shadow_offset = render_size // 40  # ~6px at 256
-    shadow_color = (0, 0, 0, 80)
-    draw.ellipse(
-        [margin + shadow_offset, margin + shadow_offset,
-         render_size - margin + shadow_offset, render_size - margin + shadow_offset],
-        fill=shadow_color,
-    )
-
-    # Main colored circle
-    draw.ellipse(
-        [margin, margin, render_size - margin, render_size - margin],
-        fill=color,
-    )
+    draw.ellipse([8, 8, size - 8, size - 8], fill=color)
 
     letter = prayer_name[0]
-    # Try bold font first, then regular
-    font_size = render_size * 56 // 128  # scaled proportionally (~112 at 256)
-    font = None
-    for font_name in ("segoeuib.ttf", "segoeui.ttf", "arialbd.ttf", "arial.ttf"):
-        try:
-            font = ImageFont.truetype(font_name, font_size)
-            break
-        except OSError:
-            continue
-    if font is None:
-        font = ImageFont.load_default()
+    font = _find_font(56)
 
-    # Precise centering using text bounding box
     bbox = draw.textbbox((0, 0), letter, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    tx = (render_size - tw) // 2 - bbox[0]
-    ty = (render_size - th) // 2 - bbox[1]
+    tx = (size - tw) // 2 - bbox[0]
+    ty = (size - th) // 2 - bbox[1]
     draw.text((tx, ty), letter, fill=(255, 255, 255), font=font)
 
-    # Downscale from 256 to 64 for crisp anti-aliased result
     return img.resize((64, 64), Image.LANCZOS)
 
 
+# ---------------------------------------------------------------------------
+# Linux notification & audio
+# ---------------------------------------------------------------------------
+
 def send_notification(prayer_name, time_str):
+    """Send a desktop notification using notify-send."""
     translated_name = _translate_prayer(prayer_name)
-    toast = Notification(
-        app_id=APP_NAME,
-        title=t("notification_title", name=translated_name, time=time_str),
-        msg=t("notification_body", name=translated_name),
-    )
-    toast.set_audio(audio.Default, loop=False)
-    toast.show()
+    title = t("notification_title", name=translated_name, time=time_str)
+    body = t("notification_body", name=translated_name)
+    try:
+        subprocess.run(
+            ["notify-send", "--app-name", APP_NAME, title, body],
+            timeout=10,
+        )
+    except FileNotFoundError:
+        # notify-send not installed; silently ignore
+        pass
+    except Exception:
+        pass
+
+
+# Track the currently playing adhan process so we can avoid overlapping playback.
+_adhan_process = None
 
 
 def _play_adhan(path):
-    """Play an adhan WAV file asynchronously via winsound."""
-    try:
-        if path and os.path.isfile(path):
-            winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
-    except Exception:
-        pass
+    """Play an adhan audio file using available Linux audio players."""
+    global _adhan_process
+    if not path or not os.path.isfile(path):
+        return
+    # Kill any previous adhan playback
+    if _adhan_process and _adhan_process.poll() is None:
+        try:
+            _adhan_process.terminate()
+        except Exception:
+            pass
+    # Try paplay (PulseAudio), then mpv, then aplay (ALSA)
+    players = [
+        ["paplay", path],
+        ["mpv", "--no-video", path],
+        ["aplay", path],
+    ]
+    for cmd in players:
+        if shutil.which(cmd[0]):
+            try:
+                _adhan_process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                return
+            except Exception:
+                continue
 
 
 # ---------------------------------------------------------------------------
@@ -655,64 +678,42 @@ class PrayerTimesWindow:
         self.app = app
         self.win = tk.Toplevel() if hasattr(app, '_tk_root') and app._tk_root else tk.Tk()
         self.win.title(t("next_prayer"))
-        self.win.overrideredirect(True)  # Remove window decorations for clean edge
-        self.win.configure(bg=BORDER_COLOR)  # Outer border color
+        self.win.configure(bg=BG_COLOR)
         self.win.resizable(False, False)
         self.win.attributes("-topmost", True)
-
-        # Inner frame provides the 1px accent border effect
-        self._inner = tk.Frame(self.win, bg=BG_COLOR, padx=0, pady=0)
-        self._inner.pack(fill="both", expand=True, padx=1, pady=1)
-
-        self._position_near_tray(344, 490)
+        self._center_window(340, 480)
         self.win.protocol("WM_DELETE_WINDOW", self._close)
-
-        # Close when clicking outside the window
-        self.win.bind("<FocusOut>", lambda e: self._close())
 
         self._build_ui()
 
-    def _position_near_tray(self, w, h):
-        """Position the window near the system tray (bottom-right corner)."""
+    def _center_window(self, w, h):
         sw = self.win.winfo_screenwidth()
         sh = self.win.winfo_screenheight()
-        x = sw - w - 12
-        y = sh - h - 50
+        x = sw - w - 20
+        y = sh - h - 80
         self.win.geometry(f"{w}x{h}+{x}+{y}")
 
     def _build_ui(self):
         import tkinter as tk
 
-        container = self._inner
         pad = 16
 
-        # Mosque name header with mosque icon
+        # Mosque name header
         if self.app.mosque_name:
-            header_frame = tk.Frame(container, bg=BG_COLOR)
-            header_frame.pack(fill="x", padx=pad, pady=(pad, 4))
-
-            tk.Label(
-                header_frame,
-                text="\U0001f54c",
-                font=(FONT_FAMILY, 13),
-                fg=TEXT_PRIMARY,
-                bg=BG_COLOR,
-            ).pack(side="left", padx=(0, 6))
-
-            tk.Label(
-                header_frame,
+            header = tk.Label(
+                self.win,
                 text=self.app.mosque_name,
                 font=(FONT_FAMILY, 13, "bold"),
                 fg=TEXT_PRIMARY,
                 bg=BG_COLOR,
                 anchor="w",
-            ).pack(side="left", fill="x", expand=True)
+            )
+            header.pack(fill="x", padx=pad, pady=(pad, 4))
 
         # Update available banner
         if self.app.update_info:
-            import webbrowser
             update_ver, update_url = self.app.update_info
-            update_frame = tk.Frame(container, bg="#1a3050", padx=10, pady=6)
+            update_frame = tk.Frame(self.win, bg="#1a3050", padx=10, pady=6)
             update_frame.pack(fill="x", padx=pad, pady=(4, 4))
             update_label = tk.Label(
                 update_frame,
@@ -723,10 +724,13 @@ class PrayerTimesWindow:
                 cursor="hand2",
             )
             update_label.pack(fill="x")
-            update_label.bind("<Button-1>", lambda e, u=update_url: webbrowser.open(u))
+            update_label.bind(
+                "<Button-1>",
+                lambda e, u=update_url: subprocess.Popen(["xdg-open", u]),
+            )
 
         # Divider
-        tk.Frame(container, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(4, 8))
+        tk.Frame(self.win, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(4, 8))
 
         display_times = self.app._display_times()
         display_names = self.app._display_names()
@@ -741,61 +745,56 @@ class PrayerTimesWindow:
                 is_past = parse_time(t_str) <= datetime.now()
                 iq = iqama_times[i] if i < len(iqama_times) else None
 
-                self._build_prayer_row(container, name, t_str, iq, is_next, is_past, i)
+                self._build_prayer_row(name, t_str, iq, is_next, is_past, i)
 
             if self.app._is_friday() and self.app.jumua2:
-                tk.Frame(container, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=2)
-                self._build_simple_row(container, t("prayer_jumuah2"), self.app.jumua2)
+                tk.Frame(self.win, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=2)
+                self._build_simple_row(t("prayer_jumuah2"), self.app.jumua2)
 
         else:
             tk.Label(
-                container,
+                self.win,
                 text=t("no_prayer_times"),
                 font=(FONT_FAMILY, 11),
                 fg=TEXT_SECONDARY,
                 bg=BG_COLOR,
             ).pack(pady=20)
 
-        # Shuruq with warm amber accent
+        # Shuruq
         if self.app.shuruq:
-            tk.Frame(container, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(8, 4))
-            self._build_shuruq_row(container, t("prayer_shuruq"), self.app.shuruq)
+            tk.Frame(self.win, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(8, 4))
+            self._build_simple_row(t("prayer_shuruq"), self.app.shuruq)
 
-        # Status / error banner
+        # Status / error
         if self.app.last_error:
-            tk.Frame(container, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(8, 4))
+            tk.Frame(self.win, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(8, 4))
             msg = self.app.last_error
             if self.app.is_cached:
                 msg = f"{t('cached_data')}. {msg}"
-            # Styled error banner with amber/orange background
-            error_frame = tk.Frame(container, bg=ERROR_BG, padx=10, pady=6)
-            error_frame.pack(fill="x", padx=pad, pady=2)
-            # Left accent strip on error banner
-            tk.Frame(error_frame, bg=ERROR_BORDER, width=3).pack(side="left", fill="y", padx=(0, 8))
             tk.Label(
-                error_frame,
+                self.win,
                 text=msg,
                 font=(FONT_FAMILY, 9),
-                fg="#e8a050",
-                bg=ERROR_BG,
+                fg="#cc7744",
+                bg=BG_COLOR,
                 anchor="w",
-                wraplength=280,
-            ).pack(fill="x", side="left")
+                wraplength=300,
+            ).pack(fill="x", padx=pad, pady=2)
 
         # Bottom buttons
-        spacer = tk.Frame(container, bg=BG_COLOR)
+        spacer = tk.Frame(self.win, bg=BG_COLOR)
         spacer.pack(fill="both", expand=True)
 
-        tk.Frame(container, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(4, 8))
+        tk.Frame(self.win, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(4, 8))
 
-        btn_frame = tk.Frame(container, bg=BG_COLOR)
+        btn_frame = tk.Frame(self.win, bg=BG_COLOR)
         btn_frame.pack(fill="x", padx=pad, pady=(0, pad))
 
-        self._make_pill_button(btn_frame, t("refresh"), self._on_refresh).pack(side="left")
-        self._make_pill_button(btn_frame, t("settings"), self._on_settings).pack(side="left", padx=(8, 0))
-        self._make_pill_button(btn_frame, t("quit"), self._on_quit).pack(side="right")
+        self._make_button(btn_frame, t("refresh"), self._on_refresh).pack(side="left")
+        self._make_button(btn_frame, t("settings"), self._on_settings).pack(side="left", padx=(8, 0))
+        self._make_button(btn_frame, t("quit"), self._on_quit).pack(side="right")
 
-    def _build_prayer_row(self, parent, name, time_str, iqama, is_next, is_past, index):
+    def _build_prayer_row(self, name, time_str, iqama, is_next, is_past, index):
         import tkinter as tk
 
         # Translate the prayer name for display
@@ -805,51 +804,8 @@ class PrayerTimesWindow:
         fg = ACCENT if is_next else TEXT_DIM if is_past else TEXT_PRIMARY
         color = PRAYER_COLORS.get(name, "#888888")
 
-        # Outer wrapper for the left accent border on next prayer
-        if is_next:
-            outer = tk.Frame(parent, bg=ACCENT)
-            outer.pack(fill="x")
-            row = tk.Frame(outer, bg=bg, padx=12, pady=8)
-            row.pack(fill="x", padx=(4, 0))  # 4px blue left accent strip
-        else:
-            outer = None
-            row = tk.Frame(parent, bg=bg, padx=16, pady=8)
-            row.pack(fill="x")
-
-        # Hover effect bindings
-        def _on_enter(e):
-            if not is_next:
-                row.configure(bg=CARD_HOVER)
-                for child in row.winfo_children():
-                    try:
-                        child.configure(bg=CARD_HOVER)
-                    except Exception:
-                        pass
-                    # Also update children of sub-frames
-                    if hasattr(child, 'winfo_children'):
-                        for sub in child.winfo_children():
-                            try:
-                                sub.configure(bg=CARD_HOVER)
-                            except Exception:
-                                pass
-
-        def _on_leave(e):
-            if not is_next:
-                row.configure(bg=BG_COLOR)
-                for child in row.winfo_children():
-                    try:
-                        child.configure(bg=BG_COLOR)
-                    except Exception:
-                        pass
-                    if hasattr(child, 'winfo_children'):
-                        for sub in child.winfo_children():
-                            try:
-                                sub.configure(bg=BG_COLOR)
-                            except Exception:
-                                pass
-
-        row.bind("<Enter>", _on_enter)
-        row.bind("<Leave>", _on_leave)
+        row = tk.Frame(self.win, bg=bg, padx=16, pady=8)
+        row.pack(fill="x")
 
         dot = tk.Canvas(row, width=12, height=12, bg=bg, highlightthickness=0)
         dot.create_oval(1, 1, 11, 11, fill=color, outline="")
@@ -869,20 +825,14 @@ class PrayerTimesWindow:
         ).pack(anchor="w")
 
         if iqama:
-            iq_frame = tk.Frame(name_frame, bg=bg)
-            iq_frame.pack(anchor="w")
-            # Small colored dot badge before iqama time
-            iq_dot = tk.Canvas(iq_frame, width=8, height=8, bg=bg, highlightthickness=0)
-            iq_dot.create_oval(1, 1, 7, 7, fill=IQAMA_DOT, outline="")
-            iq_dot.pack(side="left", padx=(0, 4), pady=2)
             tk.Label(
-                iq_frame,
+                name_frame,
                 text=f"{t('iqama')} {iqama}",
                 font=(FONT_FAMILY, 9),
                 fg=TEXT_SECONDARY if is_next else TEXT_DIM,
                 bg=bg,
                 anchor="w",
-            ).pack(side="left", anchor="w")
+            ).pack(anchor="w")
 
         right_frame = tk.Frame(row, bg=bg)
         right_frame.pack(side="right")
@@ -892,8 +842,8 @@ class PrayerTimesWindow:
             tk.Label(
                 right_frame,
                 text=countdown,
-                font=(FONT_FAMILY, 10, "bold"),
-                fg=ACCENT,
+                font=(FONT_FAMILY, 9),
+                fg=TEXT_SECONDARY,
                 bg=bg,
             ).pack(anchor="e")
 
@@ -905,10 +855,10 @@ class PrayerTimesWindow:
             bg=bg,
         ).pack(anchor="e")
 
-    def _build_simple_row(self, parent, name, time_str):
+    def _build_simple_row(self, name, time_str):
         import tkinter as tk
 
-        row = tk.Frame(parent, bg=BG_COLOR, padx=16, pady=4)
+        row = tk.Frame(self.win, bg=BG_COLOR, padx=16, pady=4)
         row.pack(fill="x")
 
         tk.Label(
@@ -920,61 +870,23 @@ class PrayerTimesWindow:
             fg=TEXT_SECONDARY, bg=BG_COLOR,
         ).pack(side="right")
 
-    def _build_shuruq_row(self, parent, name, time_str):
-        """Build the Shuruq row with a warm amber/sunrise accent."""
+    def _make_button(self, parent, text, command):
         import tkinter as tk
-
-        row = tk.Frame(parent, bg=BG_COLOR, padx=16, pady=6)
-        row.pack(fill="x")
-
-        # Small amber sunrise dot
-        sun_dot = tk.Canvas(row, width=10, height=10, bg=BG_COLOR, highlightthickness=0)
-        sun_dot.create_oval(1, 1, 9, 9, fill=SHURUQ_ACCENT, outline="")
-        sun_dot.pack(side="left", padx=(0, 8))
-
-        tk.Label(
-            row, text=name, font=(FONT_FAMILY, 10),
-            fg=SHURUQ_ACCENT, bg=BG_COLOR, anchor="w",
-        ).pack(side="left")
-        tk.Label(
-            row, text=time_str, font=(FONT_FAMILY, 10, "bold"),
-            fg=SHURUQ_ACCENT, bg=BG_COLOR,
-        ).pack(side="right")
-
-    def _make_pill_button(self, parent, text, command):
-        """Create a rounded-pill styled button using a frame with padding."""
-        import tkinter as tk
-
-        pill = tk.Frame(parent, bg=CARD_COLOR, padx=1, pady=1)
 
         btn = tk.Label(
-            pill,
+            parent,
             text=text,
             font=(FONT_FAMILY, 10),
             fg=TEXT_SECONDARY,
             bg=CARD_COLOR,
-            padx=14,
-            pady=6,
-            borderwidth=0,
+            padx=12,
+            pady=5,
             cursor="hand2",
         )
-        btn.pack()
-
-        def _enter(e):
-            btn.configure(bg=CARD_HOVER, fg=TEXT_PRIMARY)
-            pill.configure(bg=CARD_HOVER)
-
-        def _leave(e):
-            btn.configure(bg=CARD_COLOR, fg=TEXT_SECONDARY)
-            pill.configure(bg=CARD_COLOR)
-
         btn.bind("<Button-1>", lambda e: command())
-        btn.bind("<Enter>", _enter)
-        btn.bind("<Leave>", _leave)
-        pill.bind("<Button-1>", lambda e: command())
-        pill.bind("<Enter>", _enter)
-        pill.bind("<Leave>", _leave)
-        return pill
+        btn.bind("<Enter>", lambda e: btn.configure(bg=CARD_HOVER, fg=TEXT_PRIMARY))
+        btn.bind("<Leave>", lambda e: btn.configure(bg=CARD_COLOR, fg=TEXT_SECONDARY))
+        return btn
 
     def _on_refresh(self):
         self.win.destroy()
@@ -1020,25 +932,19 @@ class SettingsWindow:
         style.theme_use("clam")
         style.configure("Dark.TFrame", background=BG_COLOR)
         style.configure("Dark.TLabel", background=BG_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 10))
-        style.configure("Header.TLabel", background=BG_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 14, "bold"))
+        style.configure("Header.TLabel", background=BG_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 13, "bold"))
         style.configure("Dim.TLabel", background=BG_COLOR, foreground=TEXT_SECONDARY, font=(FONT_FAMILY, 9))
         style.configure("Dark.TEntry", fieldbackground=CARD_COLOR, foreground=TEXT_PRIMARY, insertcolor=TEXT_PRIMARY)
-        style.configure("Dark.TButton", background=CARD_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 10), padding=(12, 6), borderwidth=0)
+        style.configure("Dark.TButton", background=CARD_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 10), padding=(12, 6))
         style.map("Dark.TButton", background=[("active", CARD_HOVER)])
-        style.configure("Accent.TButton", background=ACCENT, foreground="#ffffff", font=(FONT_FAMILY, 10, "bold"), padding=(14, 7), borderwidth=0)
+        style.configure("Accent.TButton", background=ACCENT, foreground="#ffffff", font=(FONT_FAMILY, 10, "bold"), padding=(12, 6))
         style.map("Accent.TButton", background=[("active", "#5aa0e9")])
         style.configure("Dark.TCheckbutton", background=BG_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 10))
-        style.configure("Treeview", background=CARD_COLOR, foreground=TEXT_PRIMARY, fieldbackground=CARD_COLOR, font=(FONT_FAMILY, 10), rowheight=40)
+        style.configure("Treeview", background=CARD_COLOR, foreground=TEXT_PRIMARY, fieldbackground=CARD_COLOR, font=(FONT_FAMILY, 10), rowheight=30)
         style.configure("Treeview.Heading", background=BG_COLOR, foreground=TEXT_SECONDARY, font=(FONT_FAMILY, 9, "bold"))
         style.map("Treeview", background=[("selected", ACCENT)])
         style.configure("Dark.TCombobox", fieldbackground=CARD_COLOR, foreground=TEXT_PRIMARY, background=CARD_COLOR, font=(FONT_FAMILY, 10))
         style.map("Dark.TCombobox", fieldbackground=[("readonly", CARD_COLOR)])
-
-        # Treeview alternating row colors via tags
-        self._tree_tag_colors = {
-            "oddrow": CARD_COLOR,
-            "evenrow": "#1a2540",
-        }
 
         pad = 20
 
@@ -1061,17 +967,21 @@ class SettingsWindow:
         main.bind("<Configure>", _on_frame_configure)
         canvas.bind("<Configure>", _on_canvas_configure)
 
-        # Mouse wheel scrolling
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        # Mouse wheel scrolling (Linux uses Button-4 / Button-5)
+        def _on_mousewheel_up(event):
+            canvas.yview_scroll(-3, "units")
 
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        def _on_mousewheel_down(event):
+            canvas.yview_scroll(3, "units")
+
+        canvas.bind_all("<Button-4>", _on_mousewheel_up)
+        canvas.bind_all("<Button-5>", _on_mousewheel_down)
         self._canvas = canvas
 
         inner_pad = pad
 
         # --- Language selector ---
-        self._build_section_header(main, t("language"), inner_pad, top_pad=inner_pad)
+        ttk.Label(main, text=t("language"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(inner_pad, 4))
 
         lang_frame = ttk.Frame(main, style="Dark.TFrame")
         lang_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
@@ -1098,10 +1008,10 @@ class SettingsWindow:
         lang_combo.bind("<<ComboboxSelected>>", _on_lang_change)
 
         # Divider
-        self._build_divider(main, inner_pad)
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(0, 12))
 
         # --- Search section ---
-        self._build_section_header(main, t("find_mosque"), inner_pad)
+        ttk.Label(main, text=t("find_mosque"), style="Header.TLabel").pack(anchor="w", padx=inner_pad)
         ttk.Label(main, text=t("search_hint"), style="Dim.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 8))
 
         search_frame = ttk.Frame(main, style="Dark.TFrame")
@@ -1112,7 +1022,7 @@ class SettingsWindow:
             search_frame, textvariable=self.search_var,
             font=(FONT_FAMILY, 11), bg=CARD_COLOR, fg=TEXT_PRIMARY,
             insertbackground=TEXT_PRIMARY, relief="flat", bd=0,
-            highlightthickness=2, highlightcolor=ACCENT, highlightbackground=TEXT_DIM,
+            highlightthickness=1, highlightcolor=ACCENT, highlightbackground=TEXT_DIM,
         )
         self.search_entry.pack(side="left", fill="x", expand=True, ipady=6)
         self.search_entry.bind("<Return>", lambda e: self._do_search())
@@ -1126,15 +1036,11 @@ class SettingsWindow:
         self.results_tree.bind("<Double-1>", self._on_result_select)
         self.search_results = []
 
-        # Configure alternating row tags for results tree
-        self.results_tree.tag_configure("oddrow", background=CARD_COLOR)
-        self.results_tree.tag_configure("evenrow", background="#1a2540")
-
         # Divider
-        self._build_divider(main, inner_pad)
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(0, 12))
 
         # --- URL section ---
-        self._build_section_header(main, t("paste_url"), inner_pad)
+        ttk.Label(main, text=t("paste_url"), style="Header.TLabel").pack(anchor="w", padx=inner_pad)
         ttk.Label(main, text=t("paste_url_hint"), style="Dim.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 8))
 
         url_frame = ttk.Frame(main, style="Dark.TFrame")
@@ -1145,7 +1051,7 @@ class SettingsWindow:
             url_frame, textvariable=self.url_var,
             font=(FONT_FAMILY, 11), bg=CARD_COLOR, fg=TEXT_PRIMARY,
             insertbackground=TEXT_PRIMARY, relief="flat", bd=0,
-            highlightthickness=2, highlightcolor=ACCENT, highlightbackground=TEXT_DIM,
+            highlightthickness=1, highlightcolor=ACCENT, highlightbackground=TEXT_DIM,
         )
         self.url_entry.pack(side="left", fill="x", expand=True, ipady=6)
 
@@ -1153,11 +1059,11 @@ class SettingsWindow:
 
         # --- Connected mosque ---
         if app.mosque_name:
-            self._build_divider(main, inner_pad)
+            tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(0, 12))
             ttk.Label(main, text=f"{t('connected_mosque')}: {app.mosque_name}", style="Dim.TLabel").pack(anchor="w", padx=inner_pad)
 
         # --- Notifications toggle ---
-        self._build_divider(main, inner_pad)
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
         self.notif_var = tk.BooleanVar(value=app.settings.get("notifications_enabled", True))
         notif_cb = tk.Checkbutton(
             main,
@@ -1176,8 +1082,8 @@ class SettingsWindow:
         notif_cb.pack(anchor="w", padx=inner_pad)
 
         # --- Adhan section ---
-        self._build_divider(main, inner_pad)
-        self._build_section_header(main, t("adhan"), inner_pad)
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
+        ttk.Label(main, text=t("adhan"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
 
         self.adhan_var = tk.BooleanVar(value=app.settings.get("adhan_enabled", False))
         adhan_cb = tk.Checkbutton(
@@ -1214,8 +1120,8 @@ class SettingsWindow:
         ttk.Button(adhan_path_frame, text=t("adhan_browse"), style="Dark.TButton", command=self._browse_adhan).pack(side="right", padx=(8, 0))
 
         # --- Countdown format ---
-        self._build_divider(main, inner_pad)
-        self._build_section_header(main, t("countdown_format"), inner_pad)
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
+        ttk.Label(main, text=t("countdown_format"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
 
         cd_frame = ttk.Frame(main, style="Dark.TFrame")
         cd_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
@@ -1241,8 +1147,8 @@ class SettingsWindow:
         cd_combo.bind("<<ComboboxSelected>>", _on_cd_change)
 
         # --- Saved Mosques section ---
-        self._build_divider(main, inner_pad)
-        self._build_section_header(main, t("saved_mosques"), inner_pad)
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
+        ttk.Label(main, text=t("saved_mosques"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
 
         self.mosque_tree = ttk.Treeview(
             main, columns=("url",), show="headings", height=4, selectmode="browse",
@@ -1251,10 +1157,6 @@ class SettingsWindow:
         self.mosque_tree.column("url", width=460)
         self.mosque_tree.pack(fill="x", padx=inner_pad, pady=(0, 4))
         self.mosque_tree.bind("<Double-1>", self._on_mosque_double_click)
-
-        # Configure alternating row tags for mosque tree
-        self.mosque_tree.tag_configure("oddrow", background=CARD_COLOR)
-        self.mosque_tree.tag_configure("evenrow", background="#1a2540")
 
         mosque_btn_frame = ttk.Frame(main, style="Dark.TFrame")
         mosque_btn_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
@@ -1266,34 +1168,10 @@ class SettingsWindow:
         self._populate_mosque_tree()
 
         # --- Save All button at the bottom ---
-        self._build_divider(main, inner_pad, top=12, bottom=8)
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(12, 8))
         ttk.Button(main, text=t("save"), style="Accent.TButton", command=self._save_all).pack(anchor="e", padx=inner_pad, pady=(0, inner_pad))
 
         self.search_entry.focus_set()
-
-    def _build_section_header(self, parent, text, pad, top_pad=0):
-        """Build a section header with accent underline."""
-        import tkinter as tk
-
-        header_container = tk.Frame(parent, bg=BG_COLOR)
-        header_container.pack(fill="x", padx=pad, pady=(top_pad, 4))
-
-        tk.Label(
-            header_container,
-            text=text,
-            font=(FONT_FAMILY, 14, "bold"),
-            fg=TEXT_PRIMARY,
-            bg=BG_COLOR,
-            anchor="w",
-        ).pack(anchor="w")
-
-        # Accent underline
-        tk.Frame(header_container, bg=ACCENT, height=2, width=40).pack(anchor="w", pady=(2, 0))
-
-    def _build_divider(self, parent, pad, top=0, bottom=12):
-        """Build a visible section divider."""
-        import tkinter as tk
-        tk.Frame(parent, bg="#2a3a5a", height=1).pack(fill="x", padx=pad, pady=(top, bottom))
 
     def _countdown_label(self, value):
         if value == "compact":
@@ -1317,12 +1195,11 @@ class SettingsWindow:
             if not results:
                 self.results_tree.insert("", "end", text=t("no_results"), values=("",))
                 return
-            for i, m in enumerate(results):
+            for m in results:
                 loc = m["localisation"]
                 if len(loc) > 50:
                     loc = loc[:47] + "..."
-                tag = "evenrow" if i % 2 == 0 else "oddrow"
-                self.results_tree.insert("", "end", text=m["name"], values=(loc,), tags=(tag,))
+                self.results_tree.insert("", "end", text=m["name"], values=(loc,))
         except Exception as e:
             self.results_tree.insert("", "end", text=f"{t('search_failed')}: {e}", values=("",))
 
@@ -1367,7 +1244,10 @@ class SettingsWindow:
         from tkinter import filedialog
         path = filedialog.askopenfilename(
             title=t("adhan_path"),
-            filetypes=[("WAV files", "*.wav"), ("All files", "*.*")],
+            filetypes=[
+                ("Audio files", "*.wav *.mp3 *.ogg *.opus *.flac *.m4a"),
+                ("All files", "*.*"),
+            ],
             parent=self.win,
         )
         if path:
@@ -1382,13 +1262,12 @@ class SettingsWindow:
             self.mosque_tree.delete(item)
         saved = self.app.settings.get("saved_mosques", [])
         active_url = self.app.settings.get("mosque_url", "")
-        for i, m in enumerate(saved):
+        for m in saved:
             name = m.get("name", "")
             url = m.get("url", "")
             marker = f"[{t('active')}] " if url == active_url else ""
             display = f"{marker}{name}" if name else url
-            tag = "evenrow" if i % 2 == 0 else "oddrow"
-            self.mosque_tree.insert("", "end", values=(display,), tags=(tag,))
+            self.mosque_tree.insert("", "end", values=(display,))
 
     def _add_current_mosque(self):
         url = self.app.settings.get("mosque_url", "")
@@ -1457,7 +1336,8 @@ class SettingsWindow:
 
     def _unbind_mousewheel(self):
         try:
-            self._canvas.unbind_all("<MouseWheel>")
+            self._canvas.unbind_all("<Button-4>")
+            self._canvas.unbind_all("<Button-5>")
         except Exception:
             pass
 
@@ -1586,7 +1466,6 @@ class NextPrayerApp:
         return True
 
     def build_menu(self):
-        import webbrowser
         display_times = self._display_times()
         display_names = self._display_names()
 
@@ -1601,7 +1480,7 @@ class NextPrayerApp:
             ver, url = self.update_info
             items.append(pystray.MenuItem(
                 f"⬆ {t('update_available')} (v{ver})",
-                (lambda u: lambda: webbrowser.open(u))(url),
+                (lambda u: lambda: subprocess.Popen(["xdg-open", u]))(url),
             ))
 
         items.append(pystray.Menu.SEPARATOR)
@@ -1713,7 +1592,6 @@ class NextPrayerApp:
 
     def _open_prayer_window(self):
         try:
-            _enable_dpi_awareness()
             PrayerTimesWindow(self).show()
         except Exception:
             pass
@@ -1723,7 +1601,6 @@ class NextPrayerApp:
 
     def _open_settings_window(self):
         try:
-            _enable_dpi_awareness()
             SettingsWindow(self).show()
         except Exception:
             pass
@@ -1758,7 +1635,6 @@ class NextPrayerApp:
             self.update_icon()
 
     def run(self):
-        _enable_dpi_awareness()
         img = create_icon_image("Fajr")
         self.icon = pystray.Icon(
             APP_NAME,
@@ -1771,16 +1647,6 @@ class NextPrayerApp:
         bg.start()
 
         self.icon.run()
-
-
-def _enable_dpi_awareness():
-    try:
-        ctypes.windll.shcore.SetProcessDpiAwareness(2)
-    except Exception:
-        try:
-            ctypes.windll.user32.SetProcessDPIAware()
-        except Exception:
-            pass
 
 
 if __name__ == "__main__":

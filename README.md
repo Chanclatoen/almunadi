@@ -1,39 +1,46 @@
 # Next Prayer (Mawaqit)
 
-Display the next Islamic prayer time in your desktop's top bar/menu bar, powered by [Mawaqit](https://mawaqit.net).
+Display the next Islamic prayer time in your desktop's top bar / menu bar / system tray, powered by [Mawaqit](https://mawaqit.net).
 
 ![GNOME 50](https://img.shields.io/badge/GNOME-50-blue)
+![KDE / Linux](https://img.shields.io/badge/KDE%20%2F%20Linux-tray-1d99f3)
 ![macOS 14+](https://img.shields.io/badge/macOS-14+-black)
 ![Windows 10+](https://img.shields.io/badge/Windows-10+-0078D6)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
+![Languages](https://img.shields.io/badge/i18n-EN%20%7C%20AR%20%7C%20FR%20%7C%20TR-orange)
 
-## Features
+## Quick Install
 
-- Next prayer name, time, and countdown in the top bar
-- Contextual icons per prayer (sunrise, sun, sunset, moon)
-- Click to see all 5 daily prayer times + Shuruq
-- Desktop notifications when each prayer time arrives
-- Fetches times directly from your mosque's Mawaqit page — no account needed
-- Configurable mosque URL
-- Refreshes automatically every day
+### Windows
 
-## Platforms
+1. Download `NextPrayer.exe` from the [latest release](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
+2. Double-click to run — the icon appears in your system tray
+3. Click the tray icon and search for your mosque
 
-### Linux (GNOME Shell Extension)
+No Python or install required. See [Windows README](NextPrayerWindows/README.md) for more options.
 
-See [GNOME installation instructions](#gnome-installation) below.
+### macOS
 
-### macOS (Native Menu Bar App)
+1. Download `NextPrayer-macOS-*.zip` from the [latest release](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
+2. Unzip, drag `NextPrayer.app` to `/Applications`
+3. First launch: right-click the app, click **Open**, then **Open** again
+4. The icon appears in your menu bar — click it and open Settings to search for your mosque
 
-See [NextPrayerMac/README.md](NextPrayerMac/README.md) for build instructions. Requires macOS 14+ and Xcode 15+.
+See [macOS README](NextPrayerMac/README.md) for build instructions.
 
-### Windows (System Tray App)
+### Linux — KDE, XFCE, Cinnamon, MATE, and others
 
-See [NextPrayerWindows/README.md](NextPrayerWindows/README.md). Python-based, runs in the system tray with toast notifications. Can be packaged as a standalone `.exe` with PyInstaller.
+```bash
+cd NextPrayerLinux
+pip install -r requirements.txt
+python next_prayer_linux.py
+```
 
-## GNOME Installation
+The tray icon appears in your panel. Click it to view prayer times, right-click for the menu. Works on any Linux desktop with system tray support.
 
-### From source
+See [Linux README](NextPrayerLinux/README.md) for auto-start, PyInstaller packaging, and troubleshooting.
+
+### Linux — GNOME Shell
 
 ```bash
 git clone https://github.com/Chanclatoen/next-prayer-mawaqit.git
@@ -41,32 +48,94 @@ cd next-prayer-mawaqit
 make install
 ```
 
-Then log out and back in, and enable the extension:
+Log out and back in, then enable:
 
 ```bash
 gnome-extensions enable next-prayer@mawaqit
 ```
 
-### Manual
+Right-click the top bar indicator and choose **Configure mosque** to search for your mosque. You can also download the `.zip` from [releases](https://github.com/Chanclatoen/next-prayer-mawaqit/releases) and install it manually (see below).
 
-1. Copy the files to `~/.local/share/gnome-shell/extensions/next-prayer@mawaqit/`
-2. Compile the schema: `glib-compile-schemas schemas/`
-3. Log out and back in
-4. Enable: `gnome-extensions enable next-prayer@mawaqit`
+## Features
+
+- **Works everywhere** — native GNOME extension, macOS menu bar app, Windows tray app, and standalone Linux tray app for KDE/XFCE/Cinnamon/MATE
+- **Prayer times in your desktop** — next prayer name, time, and live countdown always visible
+- **All 5 daily prayers + Shuruq** — click to see the full schedule
+- **Iqama times** — shown when your mosque provides them via Mawaqit
+- **Jumuah (Friday prayer)** — automatically replaces Dhuhr on Fridays with your mosque's Jumuah time
+- **Desktop notifications** — fires at the exact second each prayer arrives (toggle on/off)
+- **Adhan audio** — optionally play your own adhan audio file at each prayer time
+- **Mosque search** — find your mosque by name or city, no need to hunt for URLs
+- **Multi-mosque** — save multiple mosques and switch between them instantly
+- **Offline cache** — keeps working when your network is down, using the last fetched data
+- **4 languages** — English, Arabic (عربي), French (Français), Turkish (Türkçe)
+- **Mawaqit API** — uses the structured API for reliable data, with HTML scraping as fallback
+- **No account needed** — works with any public mosque on mawaqit.net
+- **Daily auto-refresh** — fetches new times around midnight
 
 ## Configuration
 
-1. Open extension preferences (GNOME) or Settings (macOS)
-2. Paste your mosque's Mawaqit URL (e.g. `https://mawaqit.net/en/w/your-mosque-slug`)
-3. Prayer times load immediately
+### Find your mosque (recommended)
 
-To find your mosque's URL, go to [mawaqit.net](https://mawaqit.net), search for your mosque, and copy the URL from your browser.
+All platforms have a built-in **Search** feature. Type your mosque's name or city and pick from the results. The app handles the rest.
 
-## How it works
+### Paste a URL (advanced)
 
-The app fetches the public Mawaqit page for your configured mosque and extracts the embedded prayer time data (`confData`). No Mawaqit account or API key is needed.
+1. Go to [mawaqit.net](https://mawaqit.net) and find your mosque
+2. Copy the URL from your browser (e.g. `https://mawaqit.net/en/w/arrahmaan-dordrecht`)
+3. Paste it in the app's settings
 
-Times are refreshed once per day (around midnight). Notifications are scheduled to fire at the exact second each prayer time arrives.
+## GNOME Manual Installation
+
+If you prefer not to use `make install`:
+
+1. Download the `next-prayer@mawaqit.zip` from [releases](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
+2. Extract to `~/.local/share/gnome-shell/extensions/next-prayer@mawaqit/`
+3. Log out and back in
+4. Enable: `gnome-extensions enable next-prayer@mawaqit`
+
+Or install from source manually:
+
+```bash
+cp -r extension.js prefs.js metadata.json stylesheet.css schemas/ \
+  ~/.local/share/gnome-shell/extensions/next-prayer@mawaqit/
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/next-prayer@mawaqit/schemas/
+```
+
+## How It Works
+
+The app fetches prayer data from the Mawaqit API, which returns structured JSON including prayer times, iqama offsets, and Jumuah schedules. If the API is unavailable, it falls back to parsing the public HTML page. No Mawaqit account or API key is needed.
+
+Times refresh once per day (around midnight). Notifications are scheduled with precise timers so they fire at the exact second. When the network is down, the app serves cached data from the last successful fetch and retries every 5 minutes.
+
+## Releasing
+
+Each platform has its own CI/CD workflow triggered by git tags:
+
+| Platform | Tag pattern | Artifact |
+|----------|------------|----------|
+| macOS | `mac-v*` | `NextPrayer-macOS-*.zip` |
+| Windows | `win-v*` | `NextPrayer.exe` |
+| GNOME | `gnome-v*` | `next-prayer@mawaqit.zip` |
+| Linux | `linux-v*` | `NextPrayer-Linux` (AppImage) |
+
+```bash
+git tag mac-v1.1.0 && git push origin mac-v1.1.0
+git tag win-v1.1.0 && git push origin win-v1.1.0
+git tag gnome-v1.1.0 && git push origin gnome-v1.1.0
+git tag linux-v1.1.0 && git push origin linux-v1.1.0
+```
+
+## Testing
+
+```bash
+# Python (Windows / Linux apps)
+cd NextPrayerWindows && pip install pytest && pytest
+cd NextPrayerLinux && pip install pytest && pytest
+
+# JavaScript (shared utilities)
+node tests/test_utils.js
+```
 
 ## License
 

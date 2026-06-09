@@ -6,5 +6,40 @@
       <summary>Mawaqit mosque URL</summary>
       <description>Full Mawaqit URL for your mosque (e.g. https://mawaqit.net/en/w/arrahmaan-dordrecht)</description>
     </key>
+    <key name="cached-data" type="s">
+      <default>''</default>
+      <summary>Cached prayer data</summary>
+      <description>JSON string of last successfully fetched prayer data for offline fallback</description>
+    </key>
+    <key name="notifications-enabled" type="b">
+      <default>true</default>
+      <summary>Enable notifications</summary>
+      <description>Show a notification when each prayer time arrives</description>
+    </key>
+    <key name="language" type="s">
+      <default>'en'</default>
+      <summary>Display language</summary>
+      <description>Language for prayer names and UI strings (en, ar, fr, tr)</description>
+    </key>
+    <key name="adhan-enabled" type="b">
+      <default>false</default>
+      <summary>Enable adhan playback</summary>
+      <description>Play adhan audio at prayer time</description>
+    </key>
+    <key name="adhan-path" type="s">
+      <default>''</default>
+      <summary>Adhan audio file path</summary>
+      <description>Absolute path to adhan audio file</description>
+    </key>
+    <key name="countdown-format" type="s">
+      <default>'compact'</default>
+      <summary>Countdown format</summary>
+      <description>Countdown display format: compact (-2h15m) or full (-2h 15m)</description>
+    </key>
+    <key name="saved-mosques" type="s">
+      <default>'[]'</default>
+      <summary>Saved mosques</summary>
+      <description>JSON array of saved mosques with url and name</description>
+    </key>
   </schema>
 </schemalist>
