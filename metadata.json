@@ -4,6 +4,6 @@
     "uuid": "almunadi@almunadi.net",
     "settings-schema": "org.gnome.shell.extensions.almunadi",
     "shell-version": ["50"],
-    "app-version": "1.0.4",
-    "version": 5
+    "app-version": "1.0.5",
+    "version": 6
 }
