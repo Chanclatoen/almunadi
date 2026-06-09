@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.gnome.shell.extensions.next-prayer" path="/org/gnome/shell/extensions/next-prayer/">
+  <schema id="org.gnome.shell.extensions.almunadi" path="/org/gnome/shell/extensions/almunadi/">
     <key name="mosque-url" type="s">
       <default>''</default>
       <summary>Mawaqit mosque URL</summary>

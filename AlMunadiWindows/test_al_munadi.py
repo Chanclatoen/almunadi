@@ -3,7 +3,7 @@ import sys
 from datetime import datetime
 from unittest.mock import MagicMock
 
-# Allow importing next_prayer on non-Windows platforms for unit tests
+# Allow importing al_munadi on non-Windows platforms for unit tests
 if sys.platform != "win32":
     sys.modules.setdefault("winsound", MagicMock())
     winotify_mock = MagicMock()
@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from next_prayer import (
+from al_munadi import (
     extract_slug,
     format_countdown,
     get_next_prayer,
@@ -73,7 +73,7 @@ class TestParseTime:
 
 
 class TestGetNextPrayer:
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_midday(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 12, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -83,7 +83,7 @@ class TestGetNextPrayer:
         assert dt.hour == 12
         assert dt.minute == 30
 
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_after_isha(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -92,7 +92,7 @@ class TestGetNextPrayer:
         assert idx == 0
         assert dt.day == 9
 
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_before_fajr(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 3, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -101,7 +101,7 @@ class TestGetNextPrayer:
         assert idx == 0
         assert dt.hour == 5
 
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_isha_wrapped_after_midnight(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -112,7 +112,7 @@ class TestGetNextPrayer:
         assert dt.hour == 0
         assert dt.minute == 15
 
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_fajr_wrapped_to_previous_evening(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -125,25 +125,25 @@ class TestGetNextPrayer:
 
 
 class TestFormatCountdown:
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_hours_and_minutes(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 10, 0, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target) == "-2h30m"
 
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_minutes_only(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 12, 15, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target) == "-15m"
 
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_full_format(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 10, 0, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)
         assert format_countdown(target, {"countdown_format": "full"}) == "-2h 30m"
 
-    @patch("next_prayer.datetime")
+    @patch("al_munadi.datetime")
     def test_now(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 12, 30, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)

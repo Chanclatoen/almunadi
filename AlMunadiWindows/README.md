@@ -1,4 +1,4 @@
-# Next Prayer (Mawaqit) — Windows
+# Al Munadi — Windows
 
 A Windows system tray app that displays the next Islamic prayer time, powered by [Mawaqit](https://mawaqit.net).
 
@@ -6,7 +6,7 @@ A Windows system tray app that displays the next Islamic prayer time, powered by
 
 ### Option 1: Download (recommended)
 
-1. Download `NextPrayer.exe` from the [latest release](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
+1. Download `AlMunadi.exe` from the [latest release](https://github.com/Chanclatoen/almunadi/releases)
 2. Double-click to run — the crescent icon appears in your system tray (bottom-right, near the clock)
 3. Click the tray icon to open the prayer times window
 4. Go to **Settings** and search for your mosque by name or city
@@ -19,17 +19,17 @@ Requires Python 3.8+ and Windows 10/11.
 
 ```bash
 pip install -r requirements.txt
-python next_prayer.py
+python al_munadi.py
 ```
 
 ### Option 3: Build your own .exe
 
 ```bash
 pip install -r requirements.txt pyinstaller
-pyinstaller --onefile --noconsole --name NextPrayer next_prayer.py
+pyinstaller --onefile --noconsole --name AlMunadi al_munadi.py
 ```
 
-The executable will be in `dist/NextPrayer.exe`.
+The executable will be in `dist/AlMunadi.exe`.
 
 ## Features
 
@@ -62,19 +62,19 @@ Or paste a Mawaqit URL directly (e.g. `https://mawaqit.net/en/w/your-mosque`).
 
 ## Start at Login
 
-To run NextPrayer automatically when Windows starts:
+To run AlMunadi automatically when Windows starts:
 
 1. Press `Win + R`, type `shell:startup`, press Enter
-2. Copy `NextPrayer.exe` (or a shortcut to it) into the folder that opens
+2. Copy `AlMunadi.exe` (or a shortcut to it) into the folder that opens
 
-If running from source, create a shortcut to `pythonw next_prayer.py` in that folder instead.
+If running from source, create a shortcut to `pythonw al_munadi.py` in that folder instead.
 
 ## Settings Location
 
 Settings and cached data are stored in:
 
 ```
-%APPDATA%\NextPrayer\
+%APPDATA%\AlMunadi\
 ├── settings.json    # mosque URL, notification preferences
 └── cache.json       # cached prayer times for offline use
 ```

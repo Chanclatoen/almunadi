@@ -1,4 +1,4 @@
-# Next Prayer (Mawaqit)
+# Al Munadi
 
 Display the next Islamic prayer time in your desktop's top bar / menu bar / system tray, powered by [Mawaqit](https://mawaqit.net).
 
@@ -13,54 +13,54 @@ Display the next Islamic prayer time in your desktop's top bar / menu bar / syst
 
 Need the exact Mawaqit URL for your mosque? Use the hosted mosque finder:
 
-**Find your mosque:** https://chanclatoen.github.io/next-prayer-mawaqit/
+**Find your mosque:** https://almunadi.net/
 
 Search for your mosque, copy the Mawaqit URL, then paste it into the app settings.
 
 ### Windows
 
-1. Download `NextPrayer.exe` from the [latest release](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
+1. Download `AlMunadi.exe` from the [latest release](https://github.com/Chanclatoen/almunadi/releases)
 2. Double-click to run — the icon appears in your system tray
 3. Click the tray icon and search for your mosque
 
-No Python or install required. See [Windows README](NextPrayerWindows/README.md) for more options.
+No Python or install required. See [Windows README](AlMunadiWindows/README.md) for more options.
 
 ### macOS
 
-1. Download `NextPrayer-macOS-*.zip` from the [latest release](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
-2. Unzip, drag `NextPrayer.app` to `/Applications`
+1. Download `AlMunadi-macOS-*.zip` from the [latest release](https://github.com/Chanclatoen/almunadi/releases)
+2. Unzip, drag `AlMunadi.app` to `/Applications`
 3. First launch: right-click the app, click **Open**, then **Open** again
 4. The icon appears in your menu bar — click it and open Settings to search for your mosque
 
-See [macOS README](NextPrayerMac/README.md) for build instructions.
+See [macOS README](AlMunadiMac/README.md) for build instructions.
 
 ### Linux — KDE, XFCE, Cinnamon, MATE, and others
 
 ```bash
-cd NextPrayerLinux
+cd AlMunadiLinux
 pip install -r requirements.txt
-python next_prayer_linux.py
+python al_munadi_linux.py
 ```
 
 The tray icon appears in your panel. Click it to view prayer times, right-click for the menu. Works on any Linux desktop with system tray support.
 
-See [Linux README](NextPrayerLinux/README.md) for auto-start, PyInstaller packaging, and troubleshooting.
+See [Linux README](AlMunadiLinux/README.md) for auto-start, PyInstaller packaging, and troubleshooting.
 
 ### Linux — GNOME Shell
 
 ```bash
-git clone https://github.com/Chanclatoen/next-prayer-mawaqit.git
-cd next-prayer-mawaqit
+git clone https://github.com/Chanclatoen/almunadi.git
+cd almunadi
 make install
 ```
 
 Log out and back in, then enable:
 
 ```bash
-gnome-extensions enable next-prayer@mawaqit
+gnome-extensions enable almunadi@almunadi.net
 ```
 
-Right-click the top bar indicator and choose **Configure mosque** to search for your mosque. You can also download the `.zip` from [releases](https://github.com/Chanclatoen/next-prayer-mawaqit/releases) and install it manually (see below).
+Right-click the top bar indicator and choose **Configure mosque** to search for your mosque. You can also download the `.zip` from [releases](https://github.com/Chanclatoen/almunadi/releases) and install it manually (see below).
 
 ## Features
 
@@ -85,7 +85,7 @@ Right-click the top bar indicator and choose **Configure mosque** to search for 
 
 All platforms have a built-in **Search** feature. Type your mosque's name or city and pick from the results. The app handles the rest.
 
-You can also use the hosted mosque finder at https://chanclatoen.github.io/next-prayer-mawaqit/ to copy a URL before opening the app.
+You can also use the hosted mosque finder at https://almunadi.net/ to copy a URL before opening the app.
 
 ### Paste a URL (advanced)
 
@@ -97,17 +97,17 @@ You can also use the hosted mosque finder at https://chanclatoen.github.io/next-
 
 If you prefer not to use `make install`:
 
-1. Download the `next-prayer@mawaqit.zip` from [releases](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
-2. Extract to `~/.local/share/gnome-shell/extensions/next-prayer@mawaqit/`
+1. Download the `almunadi@almunadi.net.zip` from [releases](https://github.com/Chanclatoen/almunadi/releases)
+2. Extract to `~/.local/share/gnome-shell/extensions/almunadi@almunadi.net/`
 3. Log out and back in
-4. Enable: `gnome-extensions enable next-prayer@mawaqit`
+4. Enable: `gnome-extensions enable almunadi@almunadi.net`
 
 Or install from source manually:
 
 ```bash
 cp -r extension.js prefs.js metadata.json stylesheet.css schemas/ \
-  ~/.local/share/gnome-shell/extensions/next-prayer@mawaqit/
-glib-compile-schemas ~/.local/share/gnome-shell/extensions/next-prayer@mawaqit/schemas/
+  ~/.local/share/gnome-shell/extensions/almunadi@almunadi.net/
+glib-compile-schemas ~/.local/share/gnome-shell/extensions/almunadi@almunadi.net/schemas/
 ```
 
 ## How It Works
@@ -127,10 +127,10 @@ git tag vX.Y.Z && git push origin vX.Y.Z
 ```
 
 This creates a release with:
-- `NextPrayer-macOS-*.zip` — macOS app
-- `NextPrayer.exe` — Windows executable
-- `NextPrayer-Linux` — Linux binary
-- `next-prayer@mawaqit.zip` — GNOME extension
+- `AlMunadi-macOS-*.zip` — macOS app
+- `AlMunadi.exe` — Windows executable
+- `AlMunadi-Linux` — Linux binary
+- `almunadi@almunadi.net.zip` — GNOME extension
 
 ## Website
 
@@ -142,8 +142,8 @@ The hosted mosque finder uses a Cloudflare Worker in `worker/` for live Mawaqit 
 
 ```bash
 # Python (Windows / Linux apps)
-cd NextPrayerWindows && pip install pytest && pytest
-cd NextPrayerLinux && pip install pytest && pytest
+cd AlMunadiWindows && pip install pytest && pytest
+cd AlMunadiLinux && pip install pytest && pytest
 
 # JavaScript (shared utilities)
 node tests/test_utils.js

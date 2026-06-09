@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Build a release NextPrayer.app and package it into dist/NextPrayer-macOS.zip
+# Build a release AlMunadi.app and package it into dist/AlMunadi-macOS.zip
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-PROJECT="NextPrayer.xcodeproj"
-SCHEME="NextPrayer"
+PROJECT="AlMunadi.xcodeproj"
+SCHEME="AlMunadi"
 CONFIG="Release"
 BUILD_DIR="build"
 DIST_DIR="dist"
-APP_NAME="NextPrayer.app"
+APP_NAME="AlMunadi.app"
 
 # Regenerate the project from project.yml if xcodegen is available.
 if command -v xcodegen >/dev/null 2>&1; then
@@ -37,7 +37,7 @@ echo "==> Packaging"
 rm -rf "$DIST_DIR"
 mkdir -p "$DIST_DIR"
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" 2>/dev/null || echo "dev")
-ZIP_PATH="$DIST_DIR/NextPrayer-macOS-v${VERSION}.zip"
+ZIP_PATH="$DIST_DIR/AlMunadi-macOS-v${VERSION}.zip"
 
 # ditto preserves the bundle's resource forks / symlinks for a valid .app archive.
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"

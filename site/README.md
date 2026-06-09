@@ -1,4 +1,4 @@
-# Next Prayer Website
+# Al Munadi Website
 
 This is a static GitHub Pages site for the project website and mosque finder.
 

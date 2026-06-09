@@ -51,11 +51,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
-            NextPrayerLinux/next_prayer_linux.py \
-            NextPrayerWindows/next_prayer.py \
-            NextPrayerMac/NextPrayer/PrayerService.swift \
-            NextPrayerMac/project.yml \
-            NextPrayerMac/NextPrayer.xcodeproj/project.pbxproj \
+            AlMunadiLinux/al_munadi_linux.py \
+            AlMunadiWindows/al_munadi.py \
+            AlMunadiMac/AlMunadi/PrayerService.swift \
+            AlMunadiMac/project.yml \
             extension.js \
             metadata.json
           git commit -m "Bump release version to ${{ steps.bump.outputs.version }} [skip release]"

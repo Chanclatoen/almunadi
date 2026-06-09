@@ -1,4 +1,4 @@
-UUID = next-prayer@mawaqit
+UUID = almunadi@almunadi.net
 INSTALL_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 
 .PHONY: build install uninstall

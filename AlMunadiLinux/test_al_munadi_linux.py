@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 sys.modules.setdefault("pystray", MagicMock())
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from next_prayer_linux import (  # noqa: E402
+from al_munadi_linux import (  # noqa: E402
     apply_offset,
     apply_prayer_offsets,
     default_prayer_notification_settings,
@@ -34,7 +34,7 @@ class TestLinuxHelpers:
         assert dt.hour == 13
         assert dt.minute == 30
 
-    @patch("next_prayer_linux.datetime")
+    @patch("al_munadi_linux.datetime")
     def test_get_next_prayer_isha_wrapped_after_midnight(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -44,7 +44,7 @@ class TestLinuxHelpers:
         assert dt.hour == 0
         assert dt.minute == 15
 
-    @patch("next_prayer_linux.datetime")
+    @patch("al_munadi_linux.datetime")
     def test_get_next_prayer_fajr_wrapped_to_previous_evening(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 23, 0, 0)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
@@ -54,7 +54,7 @@ class TestLinuxHelpers:
         assert dt.hour == 23
         assert dt.minute == 45
 
-    @patch("next_prayer_linux.datetime")
+    @patch("al_munadi_linux.datetime")
     def test_format_countdown(self, mock_dt):
         mock_dt.now.return_value = datetime(2026, 6, 8, 10, 0, 0)
         target = datetime(2026, 6, 8, 12, 30, 0)

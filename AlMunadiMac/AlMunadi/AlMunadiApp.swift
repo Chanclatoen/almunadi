@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct NextPrayerApp: App {
+struct AlMunadiApp: App {
     @StateObject private var prayerService = PrayerService()
 
     var body: some Scene {

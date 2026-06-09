@@ -1,4 +1,4 @@
-# Next Prayer (Mawaqit) — macOS
+# Al Munadi — macOS
 
 A native macOS menu bar app that displays the next Islamic prayer time, powered by [Mawaqit](https://mawaqit.net).
 
@@ -6,11 +6,11 @@ A native macOS menu bar app that displays the next Islamic prayer time, powered 
 
 ### Option 1: Download (recommended)
 
-1. Download `NextPrayer-macOS-*.zip` from the [latest release](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
-2. Unzip and drag `NextPrayer.app` into `/Applications`
+1. Download `AlMunadi-macOS-*.zip` from the [latest release](https://github.com/Chanclatoen/almunadi/releases)
+2. Unzip and drag `AlMunadi.app` into `/Applications`
 3. The app is ad-hoc signed (not notarized), so the first launch is blocked by Gatekeeper. Either:
    - Right-click the app → **Open** → **Open**, or
-   - Run: `xattr -dr com.apple.quarantine /Applications/NextPrayer.app`
+   - Run: `xattr -dr com.apple.quarantine /Applications/AlMunadi.app`
 4. The icon appears in your menu bar (there is no Dock icon)
 5. Click the menu bar icon → **Settings** → search for your mosque
 
@@ -18,19 +18,19 @@ A native macOS menu bar app that displays the next Islamic prayer time, powered 
 
 Requires macOS 14+ (Sonoma) and Xcode 15+.
 
-The committed `NextPrayer.xcodeproj` is ready to use:
+The committed `AlMunadi.xcodeproj` is ready to use:
 
 ```bash
-open NextPrayer.xcodeproj
+open AlMunadi.xcodeproj
 ```
 
-Select the **NextPrayer** scheme and press ⌘R to build and run.
+Select the **AlMunadi** scheme and press ⌘R to build and run.
 
 To build a distributable zip from the command line:
 
 ```bash
 brew install xcodegen        # only needed if you change project.yml
-./scripts/build-release.sh   # outputs dist/NextPrayer-macOS-v<version>.zip
+./scripts/build-release.sh   # outputs dist/AlMunadi-macOS-v<version>.zip
 ```
 
 If you edit `project.yml`, regenerate the project with `xcodegen generate`.
@@ -68,7 +68,7 @@ Settings are stored in macOS `UserDefaults` (standard for native apps). Cached p
 |---------|-------------|
 | Mosque URL | Your mosque's Mawaqit URL |
 | Prayer notifications | Toggle desktop notifications on/off |
-| Launch at login | Start NextPrayer when you log in |
+| Launch at login | Start AlMunadi when you log in |
 
 ## Releasing
 

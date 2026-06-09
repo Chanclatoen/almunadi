@@ -7,20 +7,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+# The macOS .xcodeproj is generated from project.yml by xcodegen at build time,
+# so only project.yml carries the version (no committed pbxproj to patch).
 VERSION_FILES = [
-    ("NextPrayerLinux/next_prayer_linux.py", r'APP_VERSION = "\d+\.\d+\.\d+"', 'APP_VERSION = "{version}"'),
-    ("NextPrayerWindows/next_prayer.py", r'APP_VERSION = "\d+\.\d+\.\d+"', 'APP_VERSION = "{version}"'),
-    ("NextPrayerMac/NextPrayer/PrayerService.swift", r'static let appVersion = "\d+\.\d+\.\d+"', 'static let appVersion = "{version}"'),
+    ("AlMunadiLinux/al_munadi_linux.py", r'APP_VERSION = "\d+\.\d+\.\d+"', 'APP_VERSION = "{version}"'),
+    ("AlMunadiWindows/al_munadi.py", r'APP_VERSION = "\d+\.\d+\.\d+"', 'APP_VERSION = "{version}"'),
+    ("AlMunadiMac/AlMunadi/PrayerService.swift", r'static let appVersion = "\d+\.\d+\.\d+"', 'static let appVersion = "{version}"'),
     ("extension.js", r"const _VERSION = '\d+\.\d+\.\d+';", "const _VERSION = '{version}';"),
-    ("NextPrayerMac/project.yml", r'MARKETING_VERSION: "\d+\.\d+\.\d+"', 'MARKETING_VERSION: "{version}"'),
-    ("NextPrayerMac/project.yml", r'CURRENT_PROJECT_VERSION: "\d+"', 'CURRENT_PROJECT_VERSION: "{build}"'),
-    ("NextPrayerMac/NextPrayer.xcodeproj/project.pbxproj", r'CURRENT_PROJECT_VERSION = \d+;', 'CURRENT_PROJECT_VERSION = {build};'),
-    ("NextPrayerMac/NextPrayer.xcodeproj/project.pbxproj", r'MARKETING_VERSION = \d+\.\d+\.\d+;', 'MARKETING_VERSION = {version};'),
+    ("AlMunadiMac/project.yml", r'MARKETING_VERSION: "\d+\.\d+\.\d+"', 'MARKETING_VERSION: "{version}"'),
+    ("AlMunadiMac/project.yml", r'CURRENT_PROJECT_VERSION: "\d+"', 'CURRENT_PROJECT_VERSION: "{build}"'),
 ]
 
 
 def read_current_version():
-    source = (ROOT / "NextPrayerLinux/next_prayer_linux.py").read_text()
+    source = (ROOT / "AlMunadiLinux/al_munadi_linux.py").read_text()
     match = re.search(r'APP_VERSION = "(\d+)\.(\d+)\.(\d+)"', source)
     if not match:
         raise SystemExit("Could not find APP_VERSION")

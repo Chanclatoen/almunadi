@@ -8,9 +8,14 @@ schemas/gschemas.compiled
 __pycache__/
 *.pyc
 
-# Xcode / NextPrayerMac
-NextPrayerMac/build/
-NextPrayerMac/dist/
-NextPrayerMac/DerivedData/
+# Xcode / AlMunadiMac
+AlMunadiMac/build/
+AlMunadiMac/dist/
+AlMunadiMac/DerivedData/
 *.xcuserstate
 xcuserdata/
+
+# Local dev artifacts
+.venv/
+.pytest_cache/
+.wrangler/

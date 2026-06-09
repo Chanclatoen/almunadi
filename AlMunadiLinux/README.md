@@ -1,4 +1,4 @@
-# Next Prayer (Mawaqit) -- Linux
+# Al Munadi -- Linux
 
 A standalone Linux system tray app that displays Islamic prayer times from [Mawaqit](https://mawaqit.net). Designed for **KDE Plasma, XFCE, Cinnamon, MATE**, and any other desktop environment with system tray support (not needed for GNOME -- use the GNOME Shell extension instead).
 
@@ -41,9 +41,9 @@ sudo zypper install python3-tk libappindicator3-1 libnotify-tools
 ### Option 1: Run from source (recommended)
 
 ```bash
-cd NextPrayerLinux
+cd AlMunadiLinux
 pip install -r requirements.txt
-python3 next_prayer_linux.py
+python3 al_munadi_linux.py
 ```
 
 The crescent/prayer icon appears in your system tray. Click it to see prayer times, right-click for the menu.
@@ -52,10 +52,10 @@ The crescent/prayer icon appears in your system tray. Click it to see prayer tim
 
 ```bash
 pip install -r requirements.txt pyinstaller
-pyinstaller --onefile --name NextPrayerLinux next_prayer_linux.py
+pyinstaller --onefile --name AlMunadiLinux al_munadi_linux.py
 ```
 
-The binary will be in `dist/NextPrayerLinux`. Copy it anywhere and run it directly -- no Python needed at runtime.
+The binary will be in `dist/AlMunadiLinux`. Copy it anywhere and run it directly -- no Python needed at runtime.
 
 ## Features
 
@@ -91,12 +91,12 @@ Create a `.desktop` file in `~/.config/autostart/`:
 ```bash
 mkdir -p ~/.config/autostart
 
-cat > ~/.config/autostart/next-prayer.desktop << 'EOF'
+cat > ~/.config/autostart/al-munadi.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
-Name=Next Prayer (Mawaqit)
+Name=Al Munadi
 Comment=Islamic prayer times in your system tray
-Exec=python3 /full/path/to/next_prayer_linux.py
+Exec=python3 /full/path/to/al_munadi_linux.py
 Icon=clock
 Terminal=false
 Categories=Utility;
@@ -104,12 +104,12 @@ X-GNOME-Autostart-enabled=true
 EOF
 ```
 
-Replace `/full/path/to/next_prayer_linux.py` with the actual path to the script.
+Replace `/full/path/to/al_munadi_linux.py` with the actual path to the script.
 
 If you built a standalone binary with PyInstaller, use that path for `Exec=` instead:
 
 ```
-Exec=/full/path/to/NextPrayerLinux
+Exec=/full/path/to/AlMunadiLinux
 ```
 
 ## Settings location
@@ -117,7 +117,7 @@ Exec=/full/path/to/NextPrayerLinux
 Settings and cached data are stored following the XDG Base Directory Specification:
 
 ```
-~/.config/NextPrayer/
+~/.config/AlMunadi/
   settings.json    # mosque URL, notification preferences, language, etc.
   cache.json       # cached prayer times for offline use
 ```

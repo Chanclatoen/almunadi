@@ -14,7 +14,7 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: NextPrayerMac
+        working-directory: AlMunadiMac
     steps:
       - uses: actions/checkout@v4
 
@@ -59,21 +59,21 @@ jobs:
             --team-id "$TEAM_ID" \
             --wait
 
-          APP_PATH="build/Build/Products/Release/NextPrayer.app"
+          APP_PATH="build/Build/Products/Release/AlMunadi.app"
           xcrun stapler staple "$APP_PATH"
 
           VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist")
           rm "$ZIP_FILE"
-          ditto -c -k --keepParent "$APP_PATH" "dist/NextPrayer-macOS-v${VERSION}.zip"
+          ditto -c -k --keepParent "$APP_PATH" "dist/AlMunadi-macOS-v${VERSION}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NextPrayer-macOS
-          path: NextPrayerMac/dist/*.zip
+          name: AlMunadi-macOS
+          path: AlMunadiMac/dist/*.zip
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: NextPrayerMac/dist/*.zip
+          files: AlMunadiMac/dist/*.zip
