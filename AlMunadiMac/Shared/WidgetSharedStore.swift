@@ -8,11 +8,11 @@ import WidgetKit
 ///
 /// The main app calls `saveSnapshot(...)` after every successful Mawaqit refresh;
 /// the widget extension calls `loadSnapshot()` from its `TimelineProvider`.
-/// Group identifier currently uses the bundle prefix; for a distributed,
-/// notarized build it must be re-prefixed with the Team ID
-/// (`group.<TEAMID>.almunadi`) and the matching entitlements updated.
+/// macOS Developer ID (non-App-Store) builds require the App Group to be
+/// Team-ID-prefixed (`<TeamID>.<group>`); this must match both targets'
+/// entitlements and be registered on the developer portal.
 enum WidgetSharedStore {
-    static let appGroupID = "group.net.almunadi.AlMunadi"
+    static let appGroupID = "PM49C5H4XK.net.almunadi.AlMunadi"
 
     struct Snapshot {
         let data: MawaqitData

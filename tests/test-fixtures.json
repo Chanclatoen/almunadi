@@ -96,11 +96,12 @@
     }
   ],
   "translations": {
-    "supported_languages": ["en", "ar", "fr", "tr"],
+    "supported_languages": ["en", "ar", "fr", "nl", "tr"],
     "prayer_names": {
       "en": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"],
       "ar": ["فجر", "ظهر", "عصر", "مغرب", "عشاء"],
       "fr": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"],
+      "nl": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"],
       "tr": ["Sabah", "Öğle", "İkindi", "Akşam", "Yatsı"]
     },
     "required_keys": [

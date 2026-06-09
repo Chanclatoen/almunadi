@@ -12,6 +12,7 @@ __pycache__/
 AlMunadiMac/build/
 AlMunadiMac/dist/
 AlMunadiMac/DerivedData/
+AlMunadiMac/*.xcodeproj/
 *.xcuserstate
 xcuserdata/
 

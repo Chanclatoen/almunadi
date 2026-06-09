@@ -55,7 +55,8 @@ jobs:
             AlMunadiMac/AlMunadi/PrayerService.swift \
             AlMunadiMac/project.yml \
             extension.js \
-            metadata.json
+            metadata.json \
+            AlMunadiWindows/widget_provider/Package.appxmanifest
           git commit -m "Bump release version to ${{ steps.bump.outputs.version }} [skip release]"
           git push origin HEAD:main
 

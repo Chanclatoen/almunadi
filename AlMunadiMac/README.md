@@ -8,9 +8,8 @@ A native macOS menu bar app that displays the next Islamic prayer time, powered 
 
 1. Download `AlMunadi-macOS-*.zip` from the [latest release](https://github.com/Chanclatoen/almunadi/releases)
 2. Unzip and drag `AlMunadi.app` into `/Applications`
-3. The app is ad-hoc signed (not notarized), so the first launch is blocked by Gatekeeper. Either:
-   - Right-click the app → **Open** → **Open**, or
-   - Run: `xattr -dr com.apple.quarantine /Applications/AlMunadi.app`
+3. Double-click to open. Releases are signed with a Developer ID and notarized by Apple, so Gatekeeper allows them with no extra steps.
+   - If you build an unsigned/ad-hoc copy yourself and Gatekeeper blocks it, run: `xattr -dr com.apple.quarantine /Applications/AlMunadi.app`
 4. The icon appears in your menu bar (there is no Dock icon)
 5. Click the menu bar icon → **Settings** → search for your mosque
 
@@ -18,9 +17,11 @@ A native macOS menu bar app that displays the next Islamic prayer time, powered 
 
 Requires macOS 14+ (Sonoma) and Xcode 15+.
 
-The committed `AlMunadi.xcodeproj` is ready to use:
+The Xcode project is generated from `project.yml` by [XcodeGen](https://github.com/yonaskolb/XcodeGen) (it is not committed):
 
 ```bash
+brew install xcodegen
+xcodegen generate
 open AlMunadi.xcodeproj
 ```
 
@@ -73,13 +74,34 @@ Settings are stored in macOS `UserDefaults` (standard for native apps). Cached p
 
 ## Widget data sharing (App Group)
 
-The widget extension reads from the App Group `group.net.almunadi.AlMunadi`. The main app writes the prayer snapshot to this group after every successful Mawaqit fetch via `WidgetSharedStore.saveSnapshot(...)` and calls `WidgetCenter.shared.reloadAllTimelines()` so the widget refreshes immediately.
+The widget extension reads from the App Group `PM49C5H4XK.net.almunadi.AlMunadi`. The main app writes the prayer snapshot to this group after every successful Mawaqit fetch via `WidgetSharedStore.saveSnapshot(...)` and calls `WidgetCenter.shared.reloadAllTimelines()` so the widget refreshes immediately.
 
-**Team ID prefix for distribution**: the current App Group identifier works locally with ad-hoc signing. For a notarized release through an Apple Developer team, App Groups must be prefixed with the team ID — e.g. `group.<TEAMID>.almunadi`. When a team ID is wired in:
+**Team ID prefix**: macOS Developer ID (non-App-Store) builds require the App Group to be prefixed with the team ID (`<TeamID>.<group>`), so it is set to `PM49C5H4XK.net.almunadi.AlMunadi`. This identifier appears in three places that must stay in sync, and must be registered under the team's identifiers on developer.apple.com:
 
-1. Update `com.apple.security.application-groups` in both `AlMunadi/AlMunadi.entitlements` and `AlMunadiWidget/AlMunadiWidget.entitlements`.
-2. Update the `appGroupID` constant in `Shared/WidgetSharedStore.swift`.
-3. Register the new App Group on developer.apple.com under the team's identifiers.
+1. `com.apple.security.application-groups` in both `AlMunadi/AlMunadi.entitlements` and `AlMunadiWidget/AlMunadiWidget.entitlements`.
+2. The `appGroupID` constant in `Shared/WidgetSharedStore.swift`.
+
+If you build under a different team, replace `PM49C5H4XK` with your own Team ID in all three.
+
+## Time-sensitive notifications (DND bypass) — disabled pending a provisioning profile
+
+The DND-bypass option sets notifications to `.timeSensitive` so they pierce Focus.
+That requires the `com.apple.developer.usernotifications.time-sensitive` entitlement,
+which under Developer ID signing must be backed by an **embedded provisioning profile**
+— something the CI release does not currently manage. The entitlement is therefore
+omitted, and such notifications are delivered at the normal (`.active`) level instead.
+The code path is unchanged, so re-enabling is just configuration.
+
+To restore the feature:
+
+1. On developer.apple.com, enable **Time Sensitive Notifications** for the App ID
+   `net.almunadi.AlMunadi`.
+2. Create a **Developer ID** provisioning profile for that App ID and download it.
+3. Add the profile to CI (e.g. a base64 secret), install it into
+   `~/Library/MobileDevice/Provisioning Profiles/` during the build, and embed it
+   (`PROVISIONING_PROFILE_SPECIFIER` / copy as `embedded.provisionprofile`).
+4. Re-add the `com.apple.developer.usernotifications.time-sensitive` key to
+   `AlMunadi/AlMunadi.entitlements`.
 
 ## Releasing
 

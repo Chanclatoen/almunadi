@@ -38,9 +38,10 @@ No Python or install required. See [Windows README](AlMunadiWindows/README.md) f
 ### macOS
 
 1. Download `AlMunadi-macOS-*.zip` from the [latest release](https://github.com/Chanclatoen/almunadi/releases)
-2. Unzip, drag `AlMunadi.app` to `/Applications`
-3. First launch: right-click the app, click **Open**, then **Open** again
-4. The icon appears in your menu bar — click it and open Settings to search for your mosque
+2. Unzip, drag `AlMunadi.app` to `/Applications`, and double-click to open — releases are signed with a Developer ID and notarized by Apple, so no Gatekeeper bypass is needed
+3. The icon appears in your menu bar — click it and open Settings to search for your mosque
+
+> Older or unsigned builds (no Developer ID) may be blocked by Gatekeeper. If you hit "damaged / can't be opened", run `xattr -dr com.apple.quarantine /Applications/AlMunadi.app`.
 
 See [macOS README](AlMunadiMac/README.md) for build instructions.
 

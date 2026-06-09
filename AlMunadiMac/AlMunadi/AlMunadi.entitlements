@@ -6,11 +6,18 @@
     <true/>
     <key>com.apple.security.network.client</key>
     <true/>
-    <key>com.apple.developer.usernotifications.time-sensitive</key>
-    <true/>
+    <!--
+      com.apple.developer.usernotifications.time-sensitive is intentionally
+      omitted: under Developer ID signing it requires an embedded provisioning
+      profile, which CI does not manage. Without it, notifications that set
+      .timeSensitive (the DND-bypass feature) are delivered at the .active level
+      instead of piercing Focus. To restore: register the App ID with the Time
+      Sensitive Notifications capability, create a Developer ID provisioning
+      profile, embed it in the app, and re-add this key. See AlMunadiMac/README.md.
+    -->
     <key>com.apple.security.application-groups</key>
     <array>
-        <string>group.net.almunadi.AlMunadi</string>
+        <string>PM49C5H4XK.net.almunadi.AlMunadi</string>
     </array>
 </dict>
 </plist>
