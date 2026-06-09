@@ -11,7 +11,7 @@
   <Identity
     Name="net.almunadi.AlMunadiWidget"
     Publisher="CN=AlMunadi"
-    Version="1.0.6.0" />
+    Version="1.0.7.0" />
 
   <mp:PhoneIdentity PhoneProductId="81b9ff95-40c9-44ca-a8d0-18f34e778b52" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
@@ -22,7 +22,7 @@
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22621.0" MaxVersionTested="10.0.26100.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="1.0.7.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
 
   <Resources>
