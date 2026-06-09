@@ -11,6 +11,12 @@ Display the next Islamic prayer time in your desktop's top bar / menu bar / syst
 
 ## Quick Install
 
+Need the exact Mawaqit URL for your mosque? Use the hosted mosque finder:
+
+**Find your mosque:** https://chanclatoen.github.io/next-prayer-mawaqit/
+
+Search for your mosque, copy the Mawaqit URL, then paste it into the app settings.
+
 ### Windows
 
 1. Download `NextPrayer.exe` from the [latest release](https://github.com/Chanclatoen/next-prayer-mawaqit/releases)
@@ -79,6 +85,8 @@ Right-click the top bar indicator and choose **Configure mosque** to search for 
 
 All platforms have a built-in **Search** feature. Type your mosque's name or city and pick from the results. The app handles the rest.
 
+You can also use the hosted mosque finder at https://chanclatoen.github.io/next-prayer-mawaqit/ to copy a URL before opening the app.
+
 ### Paste a URL (advanced)
 
 1. Go to [mawaqit.net](https://mawaqit.net) and find your mosque
@@ -124,6 +132,12 @@ This creates a release with:
 - `NextPrayer-Linux` — Linux binary
 - `next-prayer@mawaqit.zip` — GNOME extension
 
+## Website
+
+The static website lives in `site/` and deploys to GitHub Pages on pushes to `main`.
+
+The hosted mosque finder uses a Cloudflare Worker in `worker/` for live Mawaqit search because the Mawaqit endpoint does not expose browser CORS headers. After deploying the Worker, update `site/config.js` with the Worker origin unless the Worker is mounted under the same site domain.
+
 ## Testing
 
 ```bash
@@ -133,6 +147,8 @@ cd NextPrayerLinux && pip install pytest && pytest
 
 # JavaScript (shared utilities)
 node tests/test_utils.js
+node tests/test_site_utils.js
+node worker/test_worker.js
 ```
 
 ## License

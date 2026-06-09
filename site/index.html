@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Next Prayer Mawaqit Mosque Finder</title>
+    <meta name="description" content="Find a Mawaqit mosque URL for the Next Prayer desktop app.">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./config.js"></script>
+    <script type="module" src="./js/app.js"></script>
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="topbar">
+        <a class="brand" href="./">
+            <span class="brand-mark">NP</span>
+            <span>Next Prayer</span>
+        </a>
+        <nav>
+            <a href="#downloads">Downloads</a>
+            <a href="#setup">Setup</a>
+            <a data-repo-link href="#">GitHub</a>
+        </nav>
+    </header>
+
+    <main id="main">
+        <section class="finder-shell" aria-labelledby="finder-title">
+            <div class="finder-copy">
+                <p class="eyebrow">Unofficial Mawaqit finder</p>
+                <h1 id="finder-title">Find your mosque for the desktop app</h1>
+                <p id="finder-desc">Search by mosque name, city, postal code, or country. Copy the Mawaqit URL and paste it into Next Prayer settings.</p>
+            </div>
+
+            <form class="search-panel" data-search-form>
+                <label for="mosque-search">Mosque search</label>
+                <div class="search-row">
+                    <input id="mosque-search" data-search-input type="search" placeholder="Irvine, Dordrecht, Paris..." autocomplete="off" minlength="2" aria-describedby="finder-desc">
+                    <button type="submit">Search</button>
+                </div>
+                <div class="quick-links" aria-label="Download links">
+                    <a data-releases-link href="#">Windows</a>
+                    <a data-releases-link href="#">macOS</a>
+                    <a data-releases-link href="#">Linux tray</a>
+                    <a data-releases-link href="#">GNOME</a>
+                </div>
+            </form>
+        </section>
+
+        <section class="results-section" aria-labelledby="results-title">
+            <h2 id="results-title" class="visually-hidden">Search results</h2>
+            <div class="status-row">
+                <p data-status aria-live="polite"></p>
+                <button type="button" class="secondary" data-retry hidden>Retry</button>
+            </div>
+            <div class="empty-state" data-empty>
+                <div class="app-preview" aria-hidden="true">
+                    <div class="preview-bar">
+                        <span></span>
+                        <strong>Dhuhr 12:43 -1h18m</strong>
+                    </div>
+                    <div class="preview-card">
+                        <div><span>Fajr</span><strong>04:31</strong></div>
+                        <div><span>Shuruq</span><strong>05:58</strong></div>
+                        <div class="active"><span>Dhuhr</span><strong>13:43</strong></div>
+                        <div><span>Asr</span><strong>17:45</strong></div>
+                    </div>
+                </div>
+                <p>This finder searches public Mawaqit mosque data through the project proxy. It is not an official Mawaqit directory.</p>
+            </div>
+            <div class="results-grid" data-results></div>
+        </section>
+
+        <section id="downloads" class="info-band">
+            <div>
+                <p class="eyebrow">Downloads</p>
+                <h2>Install Next Prayer</h2>
+                <p>Download a release for your desktop, then choose the mosque URL you copied from the finder.</p>
+            </div>
+            <div class="download-grid">
+                <a data-releases-link href="#">Windows tray app</a>
+                <a data-releases-link href="#">macOS menu bar app</a>
+                <a data-releases-link href="#">Linux tray app</a>
+                <a data-releases-link href="#">GNOME extension</a>
+            </div>
+        </section>
+
+        <section id="setup" class="setup-grid">
+            <div>
+                <p class="eyebrow">Setup</p>
+                <h2>Use a mosque URL in the app</h2>
+            </div>
+            <ol>
+                <li>Find your mosque and copy the Mawaqit URL.</li>
+                <li>Open Next Prayer settings on your desktop.</li>
+                <li>Paste the URL or search for the same mosque in-app.</li>
+            </ol>
+        </section>
+    </main>
+
+    <footer>
+        <span>Next Prayer is powered by public Mawaqit mosque pages.</span>
+        <a href="https://mawaqit.net" target="_blank" rel="noreferrer">Mawaqit</a>
+        <a data-repo-link href="#">Source</a>
+    </footer>
+</body>
+</html>
