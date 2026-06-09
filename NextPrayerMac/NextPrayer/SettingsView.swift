@@ -126,6 +126,19 @@ struct SettingsView: View {
                 }
             }
 
+            // MARK: - Display Mode
+
+            Section(t("display_mode")) {
+                Picker(t("display_mode"), selection: displayModeBinding) {
+                    Text(t("display_countdown")).tag("countdown")
+                    Text(t("display_time")).tag("time")
+                    Text(t("display_name")).tag("name")
+                    Text(t("display_compact")).tag("compact")
+                    Text(t("display_icon")).tag("icon")
+                }
+                .pickerStyle(.radioGroup)
+            }
+
             // MARK: - Countdown Format
 
             Section(t("countdown_format")) {
@@ -134,6 +147,38 @@ struct SettingsView: View {
                     Text(t("full")).tag("full")
                 }
                 .pickerStyle(.radioGroup)
+            }
+
+            // MARK: - Per-Prayer Notifications
+
+            Section(t("per_prayer_notifications")) {
+                ForEach(PrayerSettingsDefaults.notificationKeys, id: \.self) { key in
+                    DisclosureGroup(key) {
+                        Toggle(t("prayer_notifications"), isOn: prayerNotifEnabledBinding(for: key))
+                        Stepper(
+                            "\(t("prayer_reminder")): \(prayerNotifReminder(for: key))",
+                            value: prayerNotifReminderBinding(for: key),
+                            in: 0...120
+                        )
+                        Picker(t("adhan"), selection: prayerAdhanBinding(for: key)) {
+                            Text(t("adhan_global")).tag(Optional<Bool>.none)
+                            Text(t("adhan_on")).tag(Optional(true))
+                            Text(t("adhan_off")).tag(Optional(false))
+                        }
+                    }
+                }
+            }
+
+            // MARK: - Manual Offsets
+
+            Section(t("manual_offsets")) {
+                ForEach(PrayerSettingsDefaults.offsetKeys, id: \.self) { key in
+                    Stepper(
+                        "\(key) \(t("prayer_offset")): \(service.prayerOffsets[key] ?? 0)",
+                        value: prayerOffsetBinding(for: key),
+                        in: -60...60
+                    )
+                }
             }
 
             // MARK: - Notifications
@@ -166,10 +211,71 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 680)
+        .frame(width: 480, height: 780)
     }
 
     // MARK: - Bindings
+
+    private var displayModeBinding: Binding<String> {
+        Binding(
+            get: { service.displayMode },
+            set: { service.displayMode = $0 }
+        )
+    }
+
+    private func prayerNotifEnabledBinding(for key: String) -> Binding<Bool> {
+        Binding(
+            get: { service.prayerNotificationSettings[key]?.enabled ?? true },
+            set: { newValue in
+                var settings = service.prayerNotificationSettings
+                var entry = settings[key] ?? PrayerNotificationSetting()
+                entry.enabled = newValue
+                settings[key] = entry
+                service.prayerNotificationSettings = settings
+            }
+        )
+    }
+
+    private func prayerNotifReminder(for key: String) -> Int {
+        service.prayerNotificationSettings[key]?.reminderMinutes ?? 0
+    }
+
+    private func prayerNotifReminderBinding(for key: String) -> Binding<Int> {
+        Binding(
+            get: { service.prayerNotificationSettings[key]?.reminderMinutes ?? 0 },
+            set: { newValue in
+                var settings = service.prayerNotificationSettings
+                var entry = settings[key] ?? PrayerNotificationSetting()
+                entry.reminderMinutes = newValue
+                settings[key] = entry
+                service.prayerNotificationSettings = settings
+            }
+        )
+    }
+
+    private func prayerAdhanBinding(for key: String) -> Binding<Bool?> {
+        Binding(
+            get: { service.prayerNotificationSettings[key]?.adhanEnabled },
+            set: { newValue in
+                var settings = service.prayerNotificationSettings
+                var entry = settings[key] ?? PrayerNotificationSetting()
+                entry.adhanEnabled = newValue
+                settings[key] = entry
+                service.prayerNotificationSettings = settings
+            }
+        )
+    }
+
+    private func prayerOffsetBinding(for key: String) -> Binding<Int> {
+        Binding(
+            get: { service.prayerOffsets[key] ?? 0 },
+            set: { newValue in
+                var offsets = service.prayerOffsets
+                offsets[key] = newValue
+                service.prayerOffsets = offsets
+            }
+        )
+    }
 
     private var languageBinding: Binding<String> {
         Binding(

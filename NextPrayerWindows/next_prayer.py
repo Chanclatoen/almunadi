@@ -125,6 +125,17 @@ TRANSLATIONS = {
         "countdown_format": "Countdown format",
         "countdown_compact": "Compact",
         "countdown_full": "Full",
+        "display_mode": "Display mode",
+        "display_mode_countdown": "Countdown",
+        "display_mode_time": "Time",
+        "display_mode_name": "Name only",
+        "display_mode_compact": "Compact",
+        "display_mode_icon": "Icon only",
+        "per_prayer_notifications": "Per-prayer notifications",
+        "prayer_reminder": "Reminder (min before)",
+        "prayer_offset": "Time offset (minutes)",
+        "manual_offsets": "Manual time adjustments",
+        "adhan_per_prayer": "Adhan",
         "language": "Language",
         "now": "now",
         "paste_url": "Or Paste URL Directly",
@@ -361,6 +372,7 @@ _SETTINGS_DEFAULTS = {
     "language": "en",
     "adhan_enabled": False,
     "adhan_path": "",
+    "display_mode": "countdown",
     "countdown_format": "compact",
     "saved_mosques": [],
 }
@@ -376,6 +388,16 @@ def load_settings():
     for key, default in _SETTINGS_DEFAULTS.items():
         if key not in data:
             data[key] = default
+    if "prayer_notification_settings" not in data:
+        data["prayer_notification_settings"] = default_prayer_notification_settings()
+    else:
+        data["prayer_notification_settings"] = merge_prayer_notification_settings(
+            data.get("prayer_notification_settings")
+        )
+    if "prayer_offsets" not in data:
+        data["prayer_offsets"] = default_prayer_offsets()
+    else:
+        data["prayer_offsets"] = merge_prayer_offsets(data.get("prayer_offsets"))
     return data
 
 
@@ -517,14 +539,45 @@ def parse_time(time_str):
     return now.replace(hour=h, minute=m, second=0, microsecond=0)
 
 
+def prayer_datetime_events(times, base=None):
+    base = base or datetime.now()
+    minute_values = []
+    for time_str in times:
+        h, m = map(int, time_str.split(":"))
+        minute_values.append(h * 60 + m)
+    if not minute_values:
+        return []
+
+    events = []
+    day_offset = -1 if len(minute_values) > 1 and minute_values[0] > minute_values[1] else 0
+    previous_absolute = None
+
+    for i, minute_value in enumerate(minute_values):
+        if i > 0:
+            if day_offset < 0:
+                day_offset = 0
+            while previous_absolute is not None and minute_value + day_offset * 1440 <= previous_absolute:
+                day_offset += 1
+
+        absolute_minutes = minute_value + day_offset * 1440
+        previous_absolute = absolute_minutes
+        h, m = divmod(minute_value, 60)
+        dt = base.replace(hour=h, minute=m, second=0, microsecond=0) + timedelta(days=day_offset)
+        events.append((i, dt))
+
+    return events
+
+
 def get_next_prayer(times):
     now = datetime.now()
-    for i, t_str in enumerate(times):
-        dt = parse_time(t_str)
+    events = prayer_datetime_events(times, now)
+    for i, dt in events:
         if dt > now:
             return i, dt
-    fajr = parse_time(times[0]) + timedelta(days=1)
-    return 0, fajr
+    if events:
+        i, dt = events[0]
+        return i, dt + timedelta(days=1)
+    return 0, now
 
 
 def format_countdown(dt, settings=None):
@@ -543,6 +596,96 @@ def format_countdown(dt, settings=None):
     if h > 0:
         return f"-{h}h{m:02d}m"
     return f"-{m}m"
+
+
+PRAYER_OFFSET_KEYS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+NOTIFICATION_PRAYER_KEYS = PRAYER_OFFSET_KEYS + ["Jumuah"]
+
+
+def from_minutes(total):
+    normalized = total % 1440
+    if normalized < 0:
+        normalized += 1440
+    h, m = divmod(normalized, 60)
+    return f"{h:02d}:{m:02d}"
+
+
+def apply_offset(time_str, offset_minutes):
+    if not offset_minutes:
+        return time_str
+    h, m = map(int, time_str.split(":"))
+    return from_minutes(h * 60 + m + offset_minutes)
+
+
+def default_prayer_notification_settings():
+    return {
+        key: {"enabled": True, "reminder_minutes": 0, "adhan_enabled": None}
+        for key in NOTIFICATION_PRAYER_KEYS
+    }
+
+
+def default_prayer_offsets():
+    return {key: 0 for key in PRAYER_OFFSET_KEYS}
+
+
+def merge_prayer_notification_settings(stored):
+    merged = default_prayer_notification_settings()
+    if not isinstance(stored, dict):
+        return merged
+    for key in NOTIFICATION_PRAYER_KEYS:
+        if key in stored and isinstance(stored[key], dict):
+            entry = stored[key]
+            merged[key] = {
+                "enabled": entry.get("enabled", True) is not False,
+                "reminder_minutes": max(0, int(entry.get("reminder_minutes") or 0)),
+                "adhan_enabled": entry.get("adhan_enabled"),
+            }
+    return merged
+
+
+def merge_prayer_offsets(stored):
+    merged = default_prayer_offsets()
+    if not isinstance(stored, dict):
+        return merged
+    for key in PRAYER_OFFSET_KEYS:
+        if key in stored:
+            val = int(stored[key] or 0)
+            merged[key] = max(-60, min(60, val))
+    return merged
+
+
+def notification_key_for_index(index, is_friday, has_jumua):
+    if index == 1 and is_friday and has_jumua:
+        return "Jumuah"
+    return PRAYER_NAMES[index]
+
+
+def should_play_adhan(prayer_setting, global_adhan_enabled):
+    if prayer_setting.get("adhan_enabled") is True:
+        return True
+    if prayer_setting.get("adhan_enabled") is False:
+        return False
+    return bool(global_adhan_enabled)
+
+
+def apply_prayer_offsets(times, offsets):
+    return [
+        apply_offset(time_str, offsets.get(PRAYER_NAMES[i], 0))
+        for i, time_str in enumerate(times)
+    ]
+
+
+def format_tray_title(name, time_str, countdown, display_mode, settings=None):
+    if display_mode == "icon":
+        return name or t("next_prayer")
+    parts = []
+    if display_mode in ("countdown", "time", "name", "compact"):
+        parts.append(name)
+    if display_mode in ("countdown", "time"):
+        parts.append(time_str)
+    if display_mode in ("countdown", "compact") and countdown:
+        parts.append(countdown)
+    return "  ".join(parts) if parts else name or t("next_prayer")
 
 
 # ---------------------------------------------------------------------------
@@ -1012,7 +1155,7 @@ class SettingsWindow:
 
         sw = self.win.winfo_screenwidth()
         sh = self.win.winfo_screenheight()
-        w, h = 520, 820
+        w, h = 520, 920
         self.win.geometry(f"{w}x{h}+{(sw - w) // 2}+{(sh - h) // 2}")
         self.win.protocol("WM_DELETE_WINDOW", self._close)
 
@@ -1213,6 +1356,24 @@ class SettingsWindow:
 
         ttk.Button(adhan_path_frame, text=t("adhan_browse"), style="Dark.TButton", command=self._browse_adhan).pack(side="right", padx=(8, 0))
 
+        # --- Display mode ---
+        self._build_divider(main, inner_pad)
+        self._build_section_header(main, t("display_mode"), inner_pad)
+
+        dm_frame = ttk.Frame(main, style="Dark.TFrame")
+        dm_frame.pack(fill="x", padx=inner_pad, pady=(0, 4))
+
+        self.display_mode_var = tk.StringVar(value=app.settings.get("display_mode", "countdown"))
+        dm_combo = ttk.Combobox(
+            dm_frame,
+            textvariable=self.display_mode_var,
+            values=["countdown", "time", "name", "compact", "icon"],
+            state="readonly",
+            style="Dark.TCombobox",
+            width=12,
+        )
+        dm_combo.pack(side="left")
+
         # --- Countdown format ---
         self._build_divider(main, inner_pad)
         self._build_section_header(main, t("countdown_format"), inner_pad)
@@ -1239,6 +1400,59 @@ class SettingsWindow:
             self._cd_label_var.set(self._countdown_label(self.countdown_var.get()))
 
         cd_combo.bind("<<ComboboxSelected>>", _on_cd_change)
+
+        # --- Per-prayer notifications ---
+        self._build_divider(main, inner_pad)
+        self._build_section_header(main, t("per_prayer_notifications"), inner_pad)
+
+        self._prayer_notif_vars = {}
+        notif_settings = app.settings.get(
+            "prayer_notification_settings", default_prayer_notification_settings()
+        )
+        for key in NOTIFICATION_PRAYER_KEYS:
+            row = ttk.Frame(main, style="Dark.TFrame")
+            row.pack(fill="x", padx=inner_pad, pady=2)
+            ttk.Label(row, text=key, style="Dark.TLabel", width=8).pack(side="left")
+
+            enabled_var = tk.BooleanVar(value=notif_settings.get(key, {}).get("enabled", True))
+            ttk.Checkbutton(row, variable=enabled_var, style="Dark.TCheckbutton").pack(side="left")
+
+            ttk.Label(row, text=t("prayer_reminder"), style="Dim.TLabel").pack(side="left", padx=(8, 4))
+            reminder_var = tk.IntVar(value=notif_settings.get(key, {}).get("reminder_minutes", 0))
+            tk.Spinbox(
+                row, from_=0, to=120, textvariable=reminder_var, width=4,
+                bg=CARD_COLOR, fg=TEXT_PRIMARY, buttonbackground=CARD_COLOR,
+            ).pack(side="left")
+
+            adhan_val = notif_settings.get(key, {}).get("adhan_enabled")
+            adhan_var = tk.StringVar(value="global" if adhan_val is None else ("on" if adhan_val else "off"))
+            ttk.Combobox(
+                row, textvariable=adhan_var, values=["global", "on", "off"],
+                state="readonly", style="Dark.TCombobox", width=8,
+            ).pack(side="left", padx=(8, 0))
+
+            self._prayer_notif_vars[key] = {
+                "enabled": enabled_var,
+                "reminder": reminder_var,
+                "adhan": adhan_var,
+            }
+
+        # --- Manual offsets ---
+        self._build_divider(main, inner_pad)
+        self._build_section_header(main, t("manual_offsets"), inner_pad)
+
+        self._offset_vars = {}
+        offsets = app.settings.get("prayer_offsets", default_prayer_offsets())
+        for key in PRAYER_OFFSET_KEYS:
+            row = ttk.Frame(main, style="Dark.TFrame")
+            row.pack(fill="x", padx=inner_pad, pady=2)
+            ttk.Label(row, text=f"{key} {t('prayer_offset')}", style="Dark.TLabel", width=24).pack(side="left")
+            var = tk.IntVar(value=offsets.get(key, 0))
+            tk.Spinbox(
+                row, from_=-60, to=60, textvariable=var, width=5,
+                bg=CARD_COLOR, fg=TEXT_PRIMARY, buttonbackground=CARD_COLOR,
+            ).pack(side="left")
+            self._offset_vars[key] = var
 
         # --- Saved Mosques section ---
         self._build_divider(main, inner_pad)
@@ -1437,20 +1651,39 @@ class SettingsWindow:
     # --- Save All settings ---
 
     def _save_all(self):
-        """Save language, countdown format, adhan settings all at once."""
+        """Save language, display, countdown format, adhan, and prayer settings."""
         lang = self.lang_var.get()
         self.app.settings["language"] = lang
         _set_language(lang)
 
+        self.app.settings["display_mode"] = self.display_mode_var.get()
         self.app.settings["countdown_format"] = self.countdown_var.get()
         self.app.settings["adhan_enabled"] = self.adhan_var.get()
         self.app.settings["adhan_path"] = self.adhan_path_var.get()
         self.app.settings["notifications_enabled"] = self.notif_var.get()
 
+        notif_settings = {}
+        for key, vars_dict in self._prayer_notif_vars.items():
+            adhan_sel = vars_dict["adhan"].get()
+            adhan_enabled = None if adhan_sel == "global" else adhan_sel == "on"
+            notif_settings[key] = {
+                "enabled": vars_dict["enabled"].get(),
+                "reminder_minutes": vars_dict["reminder"].get(),
+                "adhan_enabled": adhan_enabled,
+            }
+        self.app.settings["prayer_notification_settings"] = merge_prayer_notification_settings(notif_settings)
+
+        offsets = {key: var.get() for key, var in self._offset_vars.items()}
+        self.app.settings["prayer_offsets"] = merge_prayer_offsets(offsets)
+
         save_settings(self.app.settings)
 
         # Rebuild the tray menu / title with the new language
         self.app.update_icon()
+        if self.app.settings.get("notifications_enabled", True):
+            self.app._schedule_notifications()
+        else:
+            self.app._cancel_notification_timers()
 
         self.win.destroy()
         self._unbind_mousewheel()
@@ -1508,7 +1741,8 @@ class NextPrayerApp:
         times = list(self.times)
         if self._is_friday() and self.jumua:
             times[1] = self.jumua
-        return times
+        offsets = self.settings.get("prayer_offsets", default_prayer_offsets())
+        return apply_prayer_offsets(times, offsets)
 
     def _resolved_iqama(self):
         if not self.iqama_enabled or not self.iqama or not self.times:
@@ -1534,21 +1768,64 @@ class NextPrayerApp:
         now = datetime.now()
         display_times = self._display_times()
         display_names = self._display_names()
-        for i, t_str in enumerate(display_times):
-            dt = parse_time(t_str)
+        prayer_settings = self.settings.get(
+            "prayer_notification_settings", default_prayer_notification_settings()
+        )
+        global_adhan = self.settings.get("adhan_enabled", False)
+        adhan_path = self.settings.get("adhan_path", "")
+
+        events = prayer_datetime_events(display_times, now)
+        if events and events[0][1] <= now:
+            i, dt = events[0]
+            events.append((i, dt + timedelta(days=1)))
+
+        for i, dt in events:
+            t_str = display_times[i]
+            notif_key = notification_key_for_index(i, self._is_friday(), bool(self.jumua))
+            setting = prayer_settings.get(notif_key, {"enabled": True, "reminder_minutes": 0})
+            if not setting.get("enabled", True):
+                continue
+
+            name = display_names[i]
+
+            reminder_minutes = setting.get("reminder_minutes", 0) or 0
+            if reminder_minutes > 0:
+                reminder_dt = dt - timedelta(minutes=reminder_minutes)
+                reminder_delay = (reminder_dt - now).total_seconds()
+                if reminder_delay > 0:
+                    timer = threading.Timer(
+                        reminder_delay,
+                        self._fire_reminder_notification,
+                        args=(name, reminder_minutes),
+                    )
+                    timer.daemon = True
+                    timer.start()
+                    self.notification_timers.append(timer)
+
             delay = (dt - now).total_seconds()
             if delay > 0:
+                play_adhan = should_play_adhan(setting, global_adhan)
                 timer = threading.Timer(
-                    delay, self._fire_notification, args=(display_names[i], t_str)
+                    delay,
+                    self._fire_notification,
+                    args=(name, t_str, play_adhan, adhan_path),
                 )
                 timer.daemon = True
                 timer.start()
                 self.notification_timers.append(timer)
 
-    def _fire_notification(self, name, time_str):
-        adhan_enabled = self.settings.get("adhan_enabled", False)
-        adhan_path = self.settings.get("adhan_path", "")
-        if adhan_enabled and adhan_path and os.path.isfile(adhan_path):
+    def _fire_reminder_notification(self, name, minutes):
+        translated = _translate_prayer(name)
+        toast = Notification(
+            app_id=APP_NAME,
+            title=t("notification_title", name=translated, time=f"{minutes}m"),
+            msg=f"{translated} in {minutes} minutes",
+        )
+        toast.set_audio(audio.Default, loop=False)
+        toast.show()
+
+    def _fire_notification(self, name, time_str, play_adhan=False, adhan_path=""):
+        if play_adhan and adhan_path and os.path.isfile(adhan_path):
             _play_adhan(adhan_path)
         else:
             send_notification(name, time_str)
@@ -1667,8 +1944,10 @@ class NextPrayerApp:
         name = _translate_prayer(self._display_names()[idx])
         t_str = display_times[idx]
         countdown = format_countdown(next_dt, self.settings)
+        display_mode = self.settings.get("display_mode", "countdown")
+        title = format_tray_title(name, t_str, countdown, display_mode, self.settings)
         suffix = f" ({t('cached_data')})" if self.is_cached else ""
-        return f"{name}  {t_str}  {countdown}{suffix}"
+        return f"{title}{suffix}"
 
     def refresh(self):
         url = self.settings.get("mosque_url", "")

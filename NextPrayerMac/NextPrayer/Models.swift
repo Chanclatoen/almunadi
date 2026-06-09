@@ -18,6 +18,18 @@ enum PrayerName: String, CaseIterable {
     }
 }
 
+struct PrayerNotificationSetting: Codable {
+    var enabled: Bool = true
+    var reminderMinutes: Int = 0
+    var adhanEnabled: Bool? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case enabled
+        case reminderMinutes = "reminder_minutes"
+        case adhanEnabled = "adhan_enabled"
+    }
+}
+
 struct PrayerTime: Identifiable {
     let id: PrayerName
     let name: PrayerName
@@ -25,24 +37,43 @@ struct PrayerTime: Identifiable {
     let date: Date
     var displayName: String
     var iqamaTime: String?
+    var notificationKey: String
 
     var icon: String { name.icon }
 
-    var menuBarText: String {
+    func menuBarText(displayMode: String, countdownFormat: String) -> String {
         let remaining = Int(date.timeIntervalSinceNow / 60)
-        let format = UserDefaults.standard.string(forKey: "countdownFormat") ?? "compact"
         if remaining <= 0 {
+            if displayMode == "icon" { return "" }
+            if displayMode == "name" { return displayName }
             return "\(displayName) \(t("now"))"
         }
+
         let h = remaining / 60
         let m = remaining % 60
+        let countdown: String
         if h > 0 {
-            if format == "full" {
-                return "\(displayName) \(time) -\(h)h \(String(format: "%02d", m))m"
+            if countdownFormat == "full" {
+                countdown = "-\(h)h \(String(format: "%02d", m))m"
+            } else {
+                countdown = "-\(h)h\(String(format: "%02d", m))m"
             }
-            return "\(displayName) \(time) -\(h)h\(String(format: "%02d", m))m"
+        } else {
+            countdown = "-\(m)m"
         }
-        return "\(displayName) \(time) -\(m)m"
+
+        switch displayMode {
+        case "time":
+            return "\(displayName) \(time)"
+        case "name":
+            return displayName
+        case "compact":
+            return "\(displayName) \(countdown)"
+        case "icon":
+            return ""
+        default:
+            return "\(displayName) \(time) \(countdown)"
+        }
     }
 }
 
@@ -68,4 +99,63 @@ struct SavedMosque: Codable, Identifiable {
     var id: String { url }
     let url: String
     let name: String
+}
+
+enum PrayerSettingsDefaults {
+    static let notificationKeys = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jumuah"]
+    static let offsetKeys = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]
+
+    static func defaultNotificationSettings() -> [String: PrayerNotificationSetting] {
+        var settings: [String: PrayerNotificationSetting] = [:]
+        for key in notificationKeys {
+            settings[key] = PrayerNotificationSetting()
+        }
+        return settings
+    }
+
+    static func defaultOffsets() -> [String: Int] {
+        var offsets: [String: Int] = [:]
+        for key in offsetKeys {
+            offsets[key] = 0
+        }
+        return offsets
+    }
+
+    static func mergeNotificationSettings(_ stored: [String: PrayerNotificationSetting]?) -> [String: PrayerNotificationSetting] {
+        var merged = defaultNotificationSettings()
+        guard let stored else { return merged }
+        for key in notificationKeys {
+            if let entry = stored[key] {
+                merged[key] = PrayerNotificationSetting(
+                    enabled: entry.enabled,
+                    reminderMinutes: max(0, entry.reminderMinutes),
+                    adhanEnabled: entry.adhanEnabled
+                )
+            }
+        }
+        return merged
+    }
+
+    static func mergeOffsets(_ stored: [String: Int]?) -> [String: Int] {
+        var merged = defaultOffsets()
+        guard let stored else { return merged }
+        for key in offsetKeys {
+            if let val = stored[key] {
+                merged[key] = max(-60, min(60, val))
+            }
+        }
+        return merged
+    }
+
+    static func notificationKey(for index: Int, isFriday: Bool, hasJumua: Bool) -> String {
+        if index == 1 && isFriday && hasJumua { return "Jumuah" }
+        return PrayerName.allCases[index].rawValue
+    }
+
+    static func shouldPlayAdhan(_ setting: PrayerNotificationSetting, globalEnabled: Bool) -> Bool {
+        if let perPrayer = setting.adhanEnabled {
+            return perPrayer
+        }
+        return globalEnabled
+    }
 }

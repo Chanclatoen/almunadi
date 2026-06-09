@@ -28,6 +28,7 @@ class PrayerService: ObservableObject {
     private let calendar = Calendar.current
     private static let apiBase = "https://mawaqit.net/api/2.0/mosque"
     private var audioPlayer: AVAudioPlayer?
+    private var cachedMawaqitData: MawaqitData?
 
     var notificationsEnabled: Bool {
         get { UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true }
@@ -55,8 +56,49 @@ class PrayerService: ObservableObject {
         }
     }
 
+    var displayMode: String {
+        get { UserDefaults.standard.string(forKey: "displayMode") ?? "countdown" }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "displayMode")
+            objectWillChange.send()
+        }
+    }
+
+    var prayerNotificationSettings: [String: PrayerNotificationSetting] {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: "prayerNotificationSettings"),
+                  let stored = try? JSONDecoder().decode([String: PrayerNotificationSetting].self, from: data)
+            else { return PrayerSettingsDefaults.defaultNotificationSettings() }
+            return PrayerSettingsDefaults.mergeNotificationSettings(stored)
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: "prayerNotificationSettings")
+            }
+            scheduleNotifications()
+        }
+    }
+
+    var prayerOffsets: [String: Int] {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: "prayerOffsets"),
+                  let stored = try? JSONDecoder().decode([String: Int].self, from: data)
+            else { return PrayerSettingsDefaults.defaultOffsets() }
+            return PrayerSettingsDefaults.mergeOffsets(stored)
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: "prayerOffsets")
+            }
+            applyOffsetsToPrayers()
+            scheduleNotifications()
+            objectWillChange.send()
+        }
+    }
+
     init() {
         loadSavedMosques()
+        migrateSettingsIfNeeded()
         requestNotificationPermission()
         startUpdateTimer()
         loadCache()
@@ -73,6 +115,71 @@ class PrayerService: ObservableObject {
             UserDefaults.standard.set(newValue, forKey: "mosqueUrl")
             fetchTimes()
         }
+    }
+
+    // MARK: - Settings migration
+
+    private func migrateSettingsIfNeeded() {
+        if UserDefaults.standard.data(forKey: "prayerNotificationSettings") == nil {
+            prayerNotificationSettings = PrayerSettingsDefaults.defaultNotificationSettings()
+        }
+        if UserDefaults.standard.data(forKey: "prayerOffsets") == nil {
+            prayerOffsets = PrayerSettingsDefaults.defaultOffsets()
+        }
+        if UserDefaults.standard.string(forKey: "displayMode") == nil {
+            displayMode = "countdown"
+        }
+    }
+
+    private func applyOffset(to timeStr: String, minutes: Int) -> String {
+        guard minutes != 0 else { return timeStr }
+        let parts = timeStr.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return timeStr }
+        var total = parts[0] * 60 + parts[1] + minutes
+        total = ((total % 1440) + 1440) % 1440
+        return String(format: "%02d:%02d", total / 60, total % 60)
+    }
+
+    private func minutes(from timeStr: String) -> Int? {
+        let parts = timeStr.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        return parts[0] * 60 + parts[1]
+    }
+
+    private func datesForAdjustedTimes(_ times: [String], relativeTo date: Date) -> [Date?] {
+        let minuteValues = times.map { minutes(from: $0) }
+        guard !minuteValues.isEmpty else { return [] }
+
+        var dates = Array<Date?>(repeating: nil, count: times.count)
+        var dayOffset = 0
+        var previousAbsolute: Int?
+
+        for (index, minuteValue) in minuteValues.enumerated() {
+            guard let minuteValue else { continue }
+            if index == 0,
+               minuteValues.count > 1,
+               let nextMinute = minuteValues[1],
+               minuteValue > nextMinute {
+                dayOffset = -1
+            } else if index > 0 {
+                if dayOffset < 0 { dayOffset = 0 }
+                while let previousAbsolute, minuteValue + dayOffset * 1440 <= previousAbsolute {
+                    dayOffset += 1
+                }
+            }
+
+            let absoluteMinutes = minuteValue + dayOffset * 1440
+            previousAbsolute = absoluteMinutes
+            guard let baseDate = dateFromTimeString(times[index], relativeTo: date) else { continue }
+            dates[index] = calendar.date(byAdding: .day, value: dayOffset, to: baseDate)
+        }
+
+        return dates
+    }
+
+    private func applyOffsetsToPrayers() {
+        guard let data = cachedMawaqitData else { return }
+        applyData(data, fromCache: isCached)
     }
 
     // MARK: - Language
@@ -132,8 +239,8 @@ class PrayerService: ObservableObject {
 
     // MARK: - Adhan
 
-    private func playAdhan() {
-        guard adhanEnabled else { return }
+    private func playAdhan(force: Bool = false) {
+        guard force || adhanEnabled else { return }
         let path = adhanPath
         guard !path.isEmpty else { return }
         let fileURL = URL(fileURLWithPath: path)
@@ -414,21 +521,36 @@ class PrayerService: ObservableObject {
     }
 
     private func applyData(_ data: MawaqitData, fromCache: Bool = false) {
+        cachedMawaqitData = data
         let names = PrayerName.allCases
         let today = Date()
         let showJumuah = isFriday() && data.jumua != nil
+        let offsets = prayerOffsets
+
+        let adjustedTimes = names.enumerated().compactMap { i, name -> String? in
+            guard i < data.times.count else { return nil }
+            var timeStr = data.times[i]
+            if i == 1 && showJumuah, let jumuaTime = data.jumua {
+                timeStr = jumuaTime
+            }
+            return applyOffset(to: timeStr, minutes: offsets[name.rawValue] ?? 0)
+        }
+        let adjustedDates = datesForAdjustedTimes(adjustedTimes, relativeTo: today)
 
         var prayerTimes: [PrayerTime] = []
         for (i, name) in names.enumerated() where i < data.times.count {
             var timeStr = data.times[i]
             var displayName = Translations.shared.translatedPrayerName(name)
+            let notifKey = PrayerSettingsDefaults.notificationKey(for: i, isFriday: showJumuah, hasJumua: data.jumua != nil)
 
             if i == 1 && showJumuah, let jumuaTime = data.jumua {
                 timeStr = jumuaTime
                 displayName = t("jumuah")
             }
 
-            if let date = dateFromTimeString(timeStr, relativeTo: today) {
+            let adjustedTime = i < adjustedTimes.count ? adjustedTimes[i] : applyOffset(to: timeStr, minutes: offsets[name.rawValue] ?? 0)
+
+            if i < adjustedDates.count, let date = adjustedDates[i] {
                 var iqamaTime: String? = nil
                 if data.iqamaEnabled == true, let iqama = data.iqama, i < iqama.count {
                     iqamaTime = resolveIqama(prayerTime: data.times[i], iqamaValue: iqama[i])
@@ -436,10 +558,11 @@ class PrayerService: ObservableObject {
                 prayerTimes.append(PrayerTime(
                     id: name,
                     name: name,
-                    time: timeStr,
+                    time: adjustedTime,
                     date: date,
                     displayName: displayName,
-                    iqamaTime: iqamaTime
+                    iqamaTime: iqamaTime,
+                    notificationKey: notifKey
                 ))
             }
         }
@@ -490,7 +613,8 @@ class PrayerService: ObservableObject {
                     time: first.time,
                     date: tomorrow,
                     displayName: first.displayName,
-                    iqamaTime: first.iqamaTime
+                    iqamaTime: first.iqamaTime,
+                    notificationKey: first.notificationKey
                 )
             }
         }
@@ -507,17 +631,62 @@ class PrayerService: ObservableObject {
         guard notificationsEnabled else { return }
 
         let now = Date()
-        for prayer in prayers {
+        let settings = prayerNotificationSettings
+        var prayersToSchedule = prayers
+        if let first = prayers.first,
+           first.date <= now,
+           let tomorrow = calendar.date(byAdding: .day, value: 1, to: first.date) {
+            prayersToSchedule.append(PrayerTime(
+                id: first.name,
+                name: first.name,
+                time: first.time,
+                date: tomorrow,
+                displayName: first.displayName,
+                iqamaTime: first.iqamaTime,
+                notificationKey: first.notificationKey
+            ))
+        }
+
+        for prayer in prayersToSchedule {
+            let setting = settings[prayer.notificationKey] ?? PrayerNotificationSetting()
+            guard setting.enabled else { continue }
+
+            if setting.reminderMinutes > 0 {
+                let reminderDate = prayer.date.addingTimeInterval(-Double(setting.reminderMinutes * 60))
+                let reminderDelay = reminderDate.timeIntervalSince(now)
+                if reminderDelay > 0 {
+                    let timer = Timer.scheduledTimer(withTimeInterval: reminderDelay, repeats: false) { [weak self] _ in
+                        self?.sendReminderNotification(prayer: prayer, minutes: setting.reminderMinutes)
+                    }
+                    notificationTimers.append(timer)
+                }
+            }
+
             let delay = prayer.date.timeIntervalSince(now)
             guard delay > 0 else { continue }
 
+            let playAdhan = PrayerSettingsDefaults.shouldPlayAdhan(setting, globalEnabled: adhanEnabled)
             let timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
                 self?.sendNotification(prayer: prayer)
-                self?.playAdhan()
+                if playAdhan { self?.playAdhan(force: true) }
                 self?.updateNextPrayer()
             }
             notificationTimers.append(timer)
         }
+    }
+
+    private func sendReminderNotification(prayer: PrayerTime, minutes: Int) {
+        let content = UNMutableNotificationContent()
+        content.title = String(format: t("prayer_time_title"), prayer.displayName, "\(minutes)m")
+        content.body = String(format: t("reminder_body"), prayer.displayName, minutes)
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "prayer-reminder-\(prayer.name.rawValue)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
     }
 
     private func requestNotificationPermission() {

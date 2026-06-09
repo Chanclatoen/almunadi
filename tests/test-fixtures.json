@@ -55,6 +55,46 @@
     "expected_name": "Test Mosque",
     "invalid": "<html>No confData here</html>"
   },
+  "apply_offset": [
+    {"time": "12:30", "offset": 15, "expected": "12:45"},
+    {"time": "12:30", "offset": -30, "expected": "12:00"},
+    {"time": "00:15", "offset": -30, "expected": "23:45"},
+    {"time": "23:45", "offset": 30, "expected": "00:15"},
+    {"time": "05:30", "offset": 0, "expected": "05:30"}
+  ],
+  "apply_prayer_offsets": {
+    "times": ["05:30", "12:30", "16:00", "20:30", "22:00"],
+    "offsets": {"Fajr": 5, "Dhuhr": -10, "Asr": 0, "Maghrib": 15, "Isha": -5},
+    "expected": ["05:35", "12:20", "16:00", "20:45", "21:55"]
+  },
+  "format_display": [
+    {"mode": "countdown", "format": "compact", "name": "Dhuhr", "time": "12:30", "remaining": 90, "expected_tray": "Dhuhr  12:30  -1h30m"},
+    {"mode": "time", "format": "compact", "name": "Dhuhr", "time": "12:30", "remaining": 90, "expected_tray": "Dhuhr  12:30"},
+    {"mode": "name", "format": "compact", "name": "Dhuhr", "time": "12:30", "remaining": 90, "expected_tray": "Dhuhr"},
+    {"mode": "compact", "format": "compact", "name": "Dhuhr", "time": "12:30", "remaining": 90, "expected_tray": "Dhuhr  -1h30m"},
+    {"mode": "icon", "format": "compact", "name": "Dhuhr", "time": "12:30", "remaining": 90, "expected_tray": "Dhuhr"}
+  ],
+  "next_prayer_with_offsets": {
+    "times": ["05:35", "12:20", "16:00", "20:45", "21:55"],
+    "cases": [
+      {"now_minutes": 1400, "expected": 4, "description": "before adjusted Isha"},
+      {"now_minutes": 1320, "expected": -1, "description": "after adjusted Isha rolls to Fajr"}
+    ]
+  },
+  "next_prayer_with_wrapped_offsets": [
+    {
+      "times": ["05:30", "12:30", "16:00", "20:30", "00:15"],
+      "now_minutes": 1380,
+      "expected": 4,
+      "description": "Isha offset past midnight is still next before midnight"
+    },
+    {
+      "times": ["23:45", "12:30", "16:00", "20:30", "22:00"],
+      "now_minutes": 1380,
+      "expected": 0,
+      "description": "Fajr offset to previous evening is next late at night"
+    }
+  ],
   "translations": {
     "supported_languages": ["en", "ar", "fr", "tr"],
     "prayer_names": {

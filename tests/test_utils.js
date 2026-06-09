@@ -5,6 +5,14 @@ import {
     formatCountdown,
     resolveIqama,
     parseConfDataJson,
+    applyOffset,
+    applyPrayerOffsets,
+    mergePrayerNotificationSettings,
+    mergePrayerOffsets,
+    formatTrayText,
+    notificationKeyForIndex,
+    shouldPlayAdhan,
+    defaultPrayerNotificationSettings,
 } from './utils.js';
 
 import { readFileSync } from 'fs';
@@ -53,8 +61,81 @@ for (const tc of npf.cases) {
 
 // --- formatCountdown compact (from fixtures) ---
 for (const tc of fixtures.format_countdown.compact) {
-    assertEqual(formatCountdown(tc.remaining_minutes), tc.expected, `countdown compact: ${tc.remaining_minutes}m`);
+    assertEqual(formatCountdown(tc.remaining_minutes, 'compact'), tc.expected, `countdown compact: ${tc.remaining_minutes}m`);
 }
+
+// --- formatCountdown full (from fixtures) ---
+for (const tc of fixtures.format_countdown.full) {
+    assertEqual(formatCountdown(tc.remaining_minutes, 'full'), tc.expected, `countdown full: ${tc.remaining_minutes}m`);
+}
+
+// --- applyOffset ---
+for (const tc of fixtures.apply_offset) {
+    assertEqual(applyOffset(tc.time, tc.offset), tc.expected, `applyOffset: ${tc.time} + ${tc.offset}`);
+}
+
+// --- applyPrayerOffsets ---
+const apo = fixtures.apply_prayer_offsets;
+assertEqual(
+    JSON.stringify(applyPrayerOffsets(apo.times, apo.offsets)),
+    JSON.stringify(apo.expected),
+    'applyPrayerOffsets'
+);
+
+// --- next prayer with offsets ---
+const npo = fixtures.next_prayer_with_offsets;
+for (const tc of npo.cases) {
+    assertEqual(
+        findNextPrayerIndex(npo.times, tc.now_minutes),
+        tc.expected,
+        `nextPrayerWithOffsets: ${tc.description}`
+    );
+}
+for (const tc of fixtures.next_prayer_with_wrapped_offsets) {
+    assertEqual(
+        findNextPrayerIndex(tc.times, tc.now_minutes),
+        tc.expected,
+        `nextPrayerWithWrappedOffsets: ${tc.description}`
+    );
+}
+
+// --- formatDisplay ---
+for (const tc of fixtures.format_display) {
+    assertEqual(
+        formatTrayText({
+            displayMode: tc.mode,
+            countdownFormat: tc.format,
+            name: tc.name,
+            time: tc.time,
+            remainingMinutes: tc.remaining,
+        }),
+        tc.expected_tray,
+        `formatTrayText: ${tc.mode}`
+    );
+}
+
+// --- notification settings migration ---
+const defaults = defaultPrayerNotificationSettings();
+assert(defaults.Fajr.enabled === true, 'default Fajr enabled');
+assert(defaults.Jumuah.enabled === true, 'default Jumuah enabled');
+const merged = mergePrayerNotificationSettings({ Asr: { enabled: false, reminder_minutes: 10 } });
+assert(merged.Asr.enabled === false, 'merged Asr disabled');
+assert(merged.Asr.reminder_minutes === 10, 'merged Asr reminder');
+assert(merged.Fajr.enabled === true, 'merged Fajr still enabled');
+
+// --- prayer offsets migration ---
+const offsets = mergePrayerOffsets({ Maghrib: 90, Isha: -5 });
+assert(offsets.Maghrib === 60, 'offset clamped to +60');
+assert(offsets.Isha === -5, 'offset -5 preserved');
+
+// --- Jumuah notification key ---
+assertEqual(notificationKeyForIndex(1, true, true), 'Jumuah', 'Jumuah key on Friday');
+assertEqual(notificationKeyForIndex(1, false, true), 'Dhuhr', 'Dhuhr key on weekday');
+
+// --- shouldPlayAdhan ---
+assert(shouldPlayAdhan({ adhan_enabled: null }, true) === true, 'adhan falls back to global');
+assert(shouldPlayAdhan({ adhan_enabled: false }, true) === false, 'adhan per-prayer override off');
+assert(shouldPlayAdhan({ adhan_enabled: true }, false) === true, 'adhan per-prayer override on');
 
 // --- resolveIqama (from fixtures) ---
 for (const tc of fixtures.resolve_iqama) {

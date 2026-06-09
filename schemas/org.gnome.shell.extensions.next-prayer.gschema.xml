@@ -31,10 +31,25 @@
       <summary>Adhan audio file path</summary>
       <description>Absolute path to adhan audio file</description>
     </key>
+    <key name="display-mode" type="s">
+      <default>'countdown'</default>
+      <summary>Display mode</summary>
+      <description>Panel display mode: countdown, time, name, compact, or icon</description>
+    </key>
     <key name="countdown-format" type="s">
       <default>'compact'</default>
       <summary>Countdown format</summary>
       <description>Countdown display format: compact (-2h15m) or full (-2h 15m)</description>
+    </key>
+    <key name="prayer-notification-settings" type="s">
+      <default>'{}'</default>
+      <summary>Per-prayer notification settings</summary>
+      <description>JSON object with enabled, reminder_minutes, and adhan_enabled per prayer</description>
+    </key>
+    <key name="prayer-offsets" type="s">
+      <default>'{}'</default>
+      <summary>Manual prayer time offsets</summary>
+      <description>JSON object with minute offsets (-60 to +60) per prayer</description>
     </key>
     <key name="saved-mosques" type="s">
       <default>'[]'</default>

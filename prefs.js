@@ -199,10 +199,44 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
         adhanGroup.add(adhanPathRow);
         page.add(adhanGroup);
 
-        // --- Countdown format group ---
+        // --- Display group ---
         const countdownGroup = new Adw.PreferencesGroup({
             title: 'Display',
         });
+
+        const displayModel = new Gtk.StringList();
+        displayModel.append('Countdown (name + time + countdown)');
+        displayModel.append('Time (name + time)');
+        displayModel.append('Name only');
+        displayModel.append('Compact (name + countdown)');
+        displayModel.append('Icon only');
+
+        const displayCodes = ['countdown', 'time', 'name', 'compact', 'icon'];
+
+        const displayRow = new Adw.ComboRow({
+            title: 'Display mode',
+            subtitle: 'What to show in the top bar',
+            model: displayModel,
+        });
+
+        const currentMode = settings.get_string('display-mode') || 'countdown';
+        const modeIdx = displayCodes.indexOf(currentMode);
+        displayRow.set_selected(modeIdx >= 0 ? modeIdx : 0);
+
+        displayRow.connect('notify::selected', () => {
+            const idx = displayRow.get_selected();
+            if (idx >= 0 && idx < displayCodes.length)
+                settings.set_string('display-mode', displayCodes[idx]);
+        });
+
+        settings.connect('changed::display-mode', () => {
+            const mode = settings.get_string('display-mode');
+            const idx = displayCodes.indexOf(mode);
+            if (idx >= 0)
+                displayRow.set_selected(idx);
+        });
+
+        countdownGroup.add(displayRow);
 
         const countdownModel = new Gtk.StringList();
         countdownModel.append('Compact (-2h15m)');
@@ -235,6 +269,141 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
 
         countdownGroup.add(countdownRow);
         page.add(countdownGroup);
+
+        // --- Per-prayer notifications ---
+        const PRAYER_NOTIF_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha', 'Jumuah'];
+
+        const getPrayerNotifSettings = () => {
+            const defaults = {};
+            for (const key of PRAYER_NOTIF_KEYS)
+                defaults[key] = {enabled: true, reminder_minutes: 0, adhan_enabled: null};
+            try {
+                const stored = JSON.parse(settings.get_string('prayer-notification-settings') || '{}');
+                for (const key of PRAYER_NOTIF_KEYS) {
+                    if (stored[key]) {
+                        defaults[key] = {
+                            enabled: stored[key].enabled !== false,
+                            reminder_minutes: Math.max(0, parseInt(stored[key].reminder_minutes) || 0),
+                            adhan_enabled: stored[key].adhan_enabled ?? null,
+                        };
+                    }
+                }
+            } catch {
+                // use defaults
+            }
+            return defaults;
+        };
+
+        const savePrayerNotifSettings = (data) => {
+            settings.set_string('prayer-notification-settings', JSON.stringify(data));
+        };
+
+        const perPrayerGroup = new Adw.PreferencesGroup({
+            title: 'Per-Prayer Notifications',
+            description: 'Enable notifications, reminders, and adhan per prayer',
+        });
+
+        const notifRows = {};
+        for (const key of PRAYER_NOTIF_KEYS) {
+            const row = new Adw.ExpanderRow({title: key});
+
+            const enabledRow = new Adw.SwitchRow({
+                title: 'Notifications enabled',
+                subtitle: `Notify at ${key} prayer time`,
+            });
+            enabledRow.active = getPrayerNotifSettings()[key].enabled;
+            enabledRow.connect('notify::active', () => {
+                const data = getPrayerNotifSettings();
+                data[key].enabled = enabledRow.active;
+                savePrayerNotifSettings(data);
+            });
+            row.add_row(enabledRow);
+
+            const reminderRow = new Adw.SpinRow({
+                title: 'Reminder (minutes before)',
+                adjustment: new Gtk.Adjustment({
+                    lower: 0,
+                    upper: 120,
+                    step_increment: 1,
+                    value: getPrayerNotifSettings()[key].reminder_minutes,
+                }),
+            });
+            reminderRow.connect('notify::value', () => {
+                const data = getPrayerNotifSettings();
+                data[key].reminder_minutes = reminderRow.value;
+                savePrayerNotifSettings(data);
+            });
+            row.add_row(reminderRow);
+
+            const adhanModel = new Gtk.StringList();
+            adhanModel.append('Use global setting');
+            adhanModel.append('Enabled');
+            adhanModel.append('Disabled');
+
+            const adhanRow = new Adw.ComboRow({
+                title: 'Adhan for this prayer',
+                model: adhanModel,
+            });
+            const adhanVal = getPrayerNotifSettings()[key].adhan_enabled;
+            adhanRow.set_selected(adhanVal === true ? 1 : adhanVal === false ? 2 : 0);
+            adhanRow.connect('notify::selected', () => {
+                const data = getPrayerNotifSettings();
+                const idx = adhanRow.get_selected();
+                data[key].adhan_enabled = idx === 1 ? true : idx === 2 ? false : null;
+                savePrayerNotifSettings(data);
+            });
+            row.add_row(adhanRow);
+
+            perPrayerGroup.add(row);
+            notifRows[key] = {enabledRow, reminderRow, adhanRow};
+        }
+        page.add(perPrayerGroup);
+
+        // --- Manual offsets ---
+        const getPrayerOffsets = () => {
+            const defaults = {Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0};
+            try {
+                const stored = JSON.parse(settings.get_string('prayer-offsets') || '{}');
+                for (const key of Object.keys(defaults)) {
+                    if (stored[key] !== undefined) {
+                        const val = parseInt(stored[key]) || 0;
+                        defaults[key] = Math.max(-60, Math.min(60, val));
+                    }
+                }
+            } catch {
+                // use defaults
+            }
+            return defaults;
+        };
+
+        const savePrayerOffsets = (data) => {
+            settings.set_string('prayer-offsets', JSON.stringify(data));
+        };
+
+        const offsetGroup = new Adw.PreferencesGroup({
+            title: 'Manual Time Adjustments',
+            description: 'Adjust displayed and notification times by minutes (-60 to +60)',
+        });
+
+        const OFFSET_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+        for (const key of OFFSET_KEYS) {
+            const offsetRow = new Adw.SpinRow({
+                title: `${key} offset (minutes)`,
+                adjustment: new Gtk.Adjustment({
+                    lower: -60,
+                    upper: 60,
+                    step_increment: 1,
+                    value: getPrayerOffsets()[key],
+                }),
+            });
+            offsetRow.connect('notify::value', () => {
+                const data = getPrayerOffsets();
+                data[key] = offsetRow.value;
+                savePrayerOffsets(data);
+            });
+            offsetGroup.add(offsetRow);
+        }
+        page.add(offsetGroup);
 
         // --- Saved Mosques group ---
         const savedGroup = new Adw.PreferencesGroup({

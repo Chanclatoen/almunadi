@@ -137,6 +137,9 @@ export default class NextPrayerExtension extends Extension {
     _adhanEnabledChangedId = null;
     _adhanPathChangedId = null;
     _countdownFormatChangedId = null;
+    _displayModeChangedId = null;
+    _prayerNotificationSettingsChangedId = null;
+    _prayerOffsetsChangedId = null;
     _savedMosquesChangedId = null;
     _lastError = null;
     _isCached = false;
@@ -212,6 +215,16 @@ export default class NextPrayerExtension extends Extension {
         this._countdownFormatChangedId = this._settings.connect('changed::countdown-format', () => {
             this._updateLabel();
         });
+        this._displayModeChangedId = this._settings.connect('changed::display-mode', () => {
+            this._updateLabel();
+        });
+        this._prayerNotificationSettingsChangedId = this._settings.connect('changed::prayer-notification-settings', () => {
+            this._scheduleNotifications();
+        });
+        this._prayerOffsetsChangedId = this._settings.connect('changed::prayer-offsets', () => {
+            this._updateLabel();
+            this._scheduleNotifications();
+        });
         this._savedMosquesChangedId = this._settings.connect('changed::saved-mosques', () => {
             this._updateMosquesSubmenu();
         });
@@ -259,6 +272,18 @@ export default class NextPrayerExtension extends Extension {
         if (this._countdownFormatChangedId) {
             this._settings.disconnect(this._countdownFormatChangedId);
             this._countdownFormatChangedId = null;
+        }
+        if (this._displayModeChangedId) {
+            this._settings.disconnect(this._displayModeChangedId);
+            this._displayModeChangedId = null;
+        }
+        if (this._prayerNotificationSettingsChangedId) {
+            this._settings.disconnect(this._prayerNotificationSettingsChangedId);
+            this._prayerNotificationSettingsChangedId = null;
+        }
+        if (this._prayerOffsetsChangedId) {
+            this._settings.disconnect(this._prayerOffsetsChangedId);
+            this._prayerOffsetsChangedId = null;
         }
         if (this._savedMosquesChangedId) {
             this._settings.disconnect(this._savedMosquesChangedId);
@@ -513,12 +538,107 @@ export default class NextPrayerExtension extends Extension {
         return names;
     }
 
+    _fromMinutes(total) {
+        const normalized = ((total % 1440) + 1440) % 1440;
+        const h = Math.floor(normalized / 60);
+        const m = normalized % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+
+    _applyOffset(timeStr, offsetMinutes) {
+        if (!offsetMinutes) return timeStr;
+        return this._fromMinutes(this._toMinutes(timeStr) + offsetMinutes);
+    }
+
+    _prayerEvents(displayTimes = this._displayTimes()) {
+        if (!displayTimes) return [];
+        const minutes = displayTimes.map(time => this._toMinutes(time));
+        const events = [];
+        let dayOffset = minutes.length > 1 && minutes[0] > minutes[1] ? -1 : 0;
+        let previousAbsolute = null;
+
+        for (let i = 0; i < minutes.length; i++) {
+            if (i > 0) {
+                if (dayOffset < 0)
+                    dayOffset = 0;
+                while (previousAbsolute !== null && minutes[i] + dayOffset * 1440 <= previousAbsolute)
+                    dayOffset++;
+            }
+
+            const absoluteMinutes = minutes[i] + dayOffset * 1440;
+            previousAbsolute = absoluteMinutes;
+            events.push({index: i, time: displayTimes[i], absoluteMinutes});
+        }
+
+        return events;
+    }
+
+    _findNextPrayerEvent(nowMinutes) {
+        const events = this._prayerEvents();
+        if (!events.length) return null;
+        const next = events.find(event => event.absoluteMinutes > nowMinutes);
+        if (next) return next;
+        const first = events[0];
+        return {...first, absoluteMinutes: first.absoluteMinutes + 1440};
+    }
+
+    _getPrayerOffsets() {
+        const defaults = {Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0};
+        try {
+            const stored = JSON.parse(this._settings.get_string('prayer-offsets') || '{}');
+            for (const key of Object.keys(defaults)) {
+                if (stored[key] !== undefined) {
+                    const val = parseInt(stored[key]) || 0;
+                    defaults[key] = Math.max(-60, Math.min(60, val));
+                }
+            }
+        } catch {
+            // use defaults
+        }
+        return defaults;
+    }
+
+    _getPrayerNotificationSettings() {
+        const keys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha', 'Jumuah'];
+        const settings = {};
+        for (const key of keys)
+            settings[key] = {enabled: true, reminder_minutes: 0, adhan_enabled: null};
+        try {
+            const stored = JSON.parse(this._settings.get_string('prayer-notification-settings') || '{}');
+            for (const key of keys) {
+                if (stored[key]) {
+                    settings[key] = {
+                        enabled: stored[key].enabled !== false,
+                        reminder_minutes: Math.max(0, parseInt(stored[key].reminder_minutes) || 0),
+                        adhan_enabled: stored[key].adhan_enabled ?? null,
+                    };
+                }
+            }
+        } catch {
+            // use defaults
+        }
+        return settings;
+    }
+
+    _notificationKeyForIndex(index) {
+        if (index === 1 && this._isFriday() && this._jumua)
+            return 'Jumuah';
+        return PRAYER_NAMES[index];
+    }
+
+    _shouldPlayAdhan(prayerSetting) {
+        if (prayerSetting?.adhan_enabled === true) return true;
+        if (prayerSetting?.adhan_enabled === false) return false;
+        return this._settings.get_boolean('adhan-enabled');
+    }
+
     _displayTimes() {
         if (!this._times) return null;
         const times = [...this._times];
         if (this._isFriday() && this._jumua)
             times[1] = this._jumua;
-        return times;
+        const offsets = this._getPrayerOffsets();
+        return times.map((time, i) => this._applyOffset(time, offsets[PRAYER_NAMES[i]] || 0));
     }
 
     _resolveIqama(prayerTime, iqamaValue) {
@@ -739,12 +859,12 @@ export default class NextPrayerExtension extends Extension {
     }
 
     _findNextPrayerIndex(nowMinutes) {
-        const displayTimes = this._displayTimes();
-        if (!displayTimes) return -1;
-        for (let i = 0; i < displayTimes.length; i++) {
-            if (this._toMinutes(displayTimes[i]) > nowMinutes)
-                return i;
-        }
+        const events = this._prayerEvents();
+        const next = events.find(event => event.absoluteMinutes > nowMinutes);
+        if (next) return next.index;
+        const first = events[0];
+        if (first && first.absoluteMinutes < 0 && first.absoluteMinutes + 1440 > nowMinutes)
+            return first.index;
         return -1;
     }
 
@@ -768,27 +888,58 @@ export default class NextPrayerExtension extends Extension {
 
         const now = GLib.DateTime.new_now_local();
         const nowMinutes = now.get_hour() * 60 + now.get_minute();
-        const nextIdx = this._findNextPrayerIndex(nowMinutes);
+        const nextEvent = this._findNextPrayerEvent(nowMinutes);
         const displayTimes = this._displayTimes();
         const displayNames = this._displayNames();
+        const displayMode = this._settings.get_string('display-mode') || 'countdown';
 
-        let name, time, remaining;
+        let name, time, remaining, iconIdx;
 
-        if (nextIdx === -1) {
+        if (!nextEvent) {
             name = displayNames[0];
             time = displayTimes[0];
             remaining = (24 * 60 - nowMinutes) + this._toMinutes(displayTimes[0]);
-            this._icon.icon_name = PRAYER_ICONS[0];
+            iconIdx = 0;
         } else {
-            name = displayNames[nextIdx];
-            time = displayTimes[nextIdx];
-            remaining = this._toMinutes(displayTimes[nextIdx]) - nowMinutes;
-            this._icon.icon_name = PRAYER_ICONS[nextIdx];
+            name = displayNames[nextEvent.index];
+            time = displayTimes[nextEvent.index];
+            remaining = nextEvent.absoluteMinutes - nowMinutes;
+            iconIdx = nextEvent.index;
         }
 
-        this._prayerLabel.set_text(name);
-        this._timeLabel.set_text(time);
-        this._countdownLabel.set_text(this._formatCountdown(remaining));
+        this._icon.icon_name = PRAYER_ICONS[iconIdx];
+        this._icon.visible = displayMode !== 'icon' || true;
+
+        let showName = true;
+        let showTime = true;
+        let showCountdown = true;
+
+        switch (displayMode) {
+        case 'time':
+            showCountdown = false;
+            break;
+        case 'name':
+            showTime = false;
+            showCountdown = false;
+            break;
+        case 'compact':
+            showTime = false;
+            break;
+        case 'icon':
+            showName = false;
+            showTime = false;
+            showCountdown = false;
+            break;
+        default:
+            break;
+        }
+
+        this._prayerLabel.set_text(showName ? name : '');
+        this._timeLabel.set_text(showTime ? time : '');
+        this._countdownLabel.set_text(showCountdown ? this._formatCountdown(remaining) : '');
+        this._prayerLabel.visible = showName;
+        this._timeLabel.visible = showTime;
+        this._countdownLabel.visible = showCountdown;
 
         this._updateMenu();
     }
@@ -806,24 +957,60 @@ export default class NextPrayerExtension extends Extension {
 
         const now = GLib.DateTime.new_now_local();
         const nowSeconds = now.get_hour() * 3600 + now.get_minute() * 60 + now.get_second();
-        const displayTimes = this._displayTimes();
         const displayNames = this._displayNames();
+        const prayerSettings = this._getPrayerNotificationSettings();
+        const events = this._prayerEvents();
+        if (events.length && events[0].absoluteMinutes <= nowSeconds / 60)
+            events.push({...events[0], absoluteMinutes: events[0].absoluteMinutes + 1440});
 
-        for (let i = 0; i < displayTimes.length; i++) {
-            const prayerSeconds = this._toMinutes(displayTimes[i]) * 60;
+        for (const event of events) {
+            const i = event.index;
+            const notifKey = this._notificationKeyForIndex(i);
+            const setting = prayerSettings[notifKey];
+            if (!setting?.enabled) continue;
+
+            const name = displayNames[i];
+            const time = event.time;
+            const prayerSeconds = event.absoluteMinutes * 60;
+
+            const reminderMinutes = setting.reminder_minutes || 0;
+            if (reminderMinutes > 0) {
+                const reminderDelay = prayerSeconds - (reminderMinutes * 60) - nowSeconds;
+                if (reminderDelay > 0) {
+                    const reminderId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, reminderDelay, () => {
+                        this._sendReminderNotification(name, reminderMinutes);
+                        return GLib.SOURCE_REMOVE;
+                    });
+                    this._notificationTimers.push(reminderId);
+                }
+            }
+
             const delay = prayerSeconds - nowSeconds;
             if (delay <= 0) continue;
 
-            const name = displayNames[i];
-            const time = displayTimes[i];
             const id = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
                 this._sendNotification(name, time);
-                this._maybePlayAdhan();
+                if (this._shouldPlayAdhan(setting))
+                    this._maybePlayAdhan(true);
                 this._updateLabel();
                 return GLib.SOURCE_REMOVE;
             });
             this._notificationTimers.push(id);
         }
+    }
+
+    _sendReminderNotification(prayerName, minutes) {
+        const title = this._t('notifTitle')(prayerName, `${minutes}m`);
+        const body = `${prayerName} in ${minutes} minutes`;
+        const source = MessageTray.getSystemSource();
+        const notification = new MessageTray.Notification({
+            source,
+            title,
+            body,
+            iconName: 'preferences-system-time-symbolic',
+        });
+        notification.urgency = MessageTray.Urgency.NORMAL;
+        source.addNotification(notification);
     }
 
     _sendNotification(prayerName, time) {
@@ -840,9 +1027,9 @@ export default class NextPrayerExtension extends Extension {
         source.addNotification(notification);
     }
 
-    _maybePlayAdhan() {
+    _maybePlayAdhan(force = false) {
         if (!this._gstAvailable) return;
-        if (!this._settings.get_boolean('adhan-enabled')) return;
+        if (!force && !this._settings.get_boolean('adhan-enabled')) return;
         const path = this._settings.get_string('adhan-path');
         if (!path) return;
 
