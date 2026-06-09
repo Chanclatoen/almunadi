@@ -16,7 +16,9 @@ VERSION_FILES = [
     ("AlMunadiMac/project.yml", r'MARKETING_VERSION: "\d+\.\d+\.\d+"', 'MARKETING_VERSION: "{version}"'),
     ("AlMunadiMac/project.yml", r'CURRENT_PROJECT_VERSION: "\d+"', 'CURRENT_PROJECT_VERSION: "{build}"'),
     # Windows MSIX uses a 4-part assembly version; keep the revision at 0.
-    ("AlMunadiWindows/widget_provider/Package.appxmanifest", r'Version="\d+\.\d+\.\d+\.\d+"', 'Version="{version}.0"'),
+    # The negative lookbehind avoids matching the `Version="..."` substring inside
+    # `MinVersion="..."` (which holds the minimum OS build, not the app version).
+    ("AlMunadiWindows/widget_provider/Package.appxmanifest", r'(?<![A-Za-z])Version="\d+\.\d+\.\d+\.\d+"', 'Version="{version}.0"'),
 ]
 
 
