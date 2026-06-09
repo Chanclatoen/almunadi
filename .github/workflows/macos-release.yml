@@ -12,6 +12,12 @@ permissions:
 jobs:
   build:
     runs-on: macos-15
+    # Hoisted to job level so the step `if:` guards can read them — the `secrets`
+    # context is NOT available in `if:`, and step-level env is not visible to its
+    # own step's `if:`. Job-level env is.
+    env:
+      CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
     defaults:
       run:
         working-directory: AlMunadiMac
@@ -25,9 +31,8 @@ jobs:
         run: brew install xcodegen
 
       - name: Import signing certificate
-        if: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 != '' }}
+        if: env.CERTIFICATE_BASE64 != ''
         env:
-          CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
         run: |
           CERT_FILE=$(mktemp /tmp/cert.XXXXXX.p12)
@@ -47,9 +52,8 @@ jobs:
         run: ./scripts/build-release.sh
 
       - name: Notarize app
-        if: ${{ secrets.APPLE_ID != '' }}
+        if: env.APPLE_ID != ''
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
           TEAM_ID: ${{ secrets.TEAM_ID }}
         run: |
@@ -68,7 +72,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "dist/AlMunadi-macOS-v${VERSION}.zip"
 
       - name: Verify notarized signature
-        if: ${{ secrets.APPLE_ID != '' }}
+        if: env.APPLE_ID != ''
         run: |
           APP_PATH="build/Build/Products/Release/AlMunadi.app"
           # Fail the release if the bundle is not validly signed/notarized/stapled.
