@@ -83,11 +83,11 @@ If upgrading from an older version that stored `next_prayer_settings.json` in th
 
 ## Releasing
 
-Pushing a `win-v*` tag triggers the [Windows Release](../.github/workflows/windows-release.yml) GitHub Actions workflow, which builds the `.exe` with PyInstaller and attaches it to a GitHub Release:
+Pushing a repository `v*` release tag triggers the [Windows Release](../.github/workflows/windows-release.yml) GitHub Actions workflow, which builds the `.exe` with PyInstaller and attaches it to the GitHub Release:
 
 ```bash
-git tag win-v1.1.0
-git push origin win-v1.1.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 ## License

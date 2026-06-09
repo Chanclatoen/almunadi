@@ -113,7 +113,7 @@ Times refresh once per day (around midnight). Notifications are scheduled with p
 A single version tag triggers all 4 platform builds, and all artifacts are attached to one GitHub Release:
 
 ```bash
-git tag v1.1.0 && git push origin v1.1.0
+git tag v1.0.1 && git push origin v1.0.1
 ```
 
 This creates a release with:

@@ -10,8 +10,8 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const _VERSION = '1.0.0';
-const _TAG_PREFIX = 'gnome-v';
+const _VERSION = '1.0.1';
+const _TAG_PREFIX = 'v';
 const _RELEASES_URL = 'https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases';
 const _REPO_RELEASES_PAGE = 'https://github.com/Chanclatoen/next-prayer-mawaqit/releases';
 

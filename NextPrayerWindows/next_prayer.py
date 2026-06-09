@@ -13,8 +13,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from winotify import Notification, audio
 
 APP_NAME = "Next Prayer (Mawaqit)"
-APP_VERSION = "1.0.0"
-TAG_PREFIX = "win-v"
+APP_VERSION = "1.0.1"
+TAG_PREFIX = "v"
 RELEASES_URL = "https://api.github.com/repos/Chanclatoen/next-prayer-mawaqit/releases"
 REPO_RELEASES_PAGE = "https://github.com/Chanclatoen/next-prayer-mawaqit/releases"
 PRAYER_NAMES = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]

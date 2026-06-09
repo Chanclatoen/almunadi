@@ -4,5 +4,5 @@
     "uuid": "next-prayer@mawaqit",
     "settings-schema": "org.gnome.shell.extensions.next-prayer",
     "shell-version": ["50"],
-    "version": 1
+    "version": 2
 }
