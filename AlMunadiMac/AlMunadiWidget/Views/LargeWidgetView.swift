@@ -91,7 +91,7 @@ private struct LargePrayerRow: View {
             Image(systemName: prayer.icon)
                 .font(.caption)
                 .frame(width: 18)
-                .foregroundStyle(isNext ? .tint : .secondary)
+                .foregroundStyle(isNext ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
             Text(prayer.displayName)
                 .font(.callout.weight(isNext ? .semibold : .regular))
                 .lineLimit(1)

@@ -52,7 +52,7 @@ struct PrayerRow: View {
             Image(systemName: prayer.icon)
                 .font(.caption2)
                 .frame(width: 14)
-                .foregroundStyle(isNext ? .tint : .secondary)
+                .foregroundStyle(isNext ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
             Text(prayer.displayName)
                 .font(.caption.weight(isNext ? .semibold : .regular))
                 .lineLimit(1)
