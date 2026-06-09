@@ -40,8 +40,10 @@ jobs:
         working-directory: AlMunadiWindows/widget_provider
         shell: pwsh
         run: |
-          # Generate a self-signed cert for the MSIX (replace with a real cert
-          # for signed distribution). Trust on install with:
+          # Generate a self-signed cert in CurrentUser\My and sign by thumbprint.
+          # Avoids the PFX export/re-import dance that hits APPX0105 ("cannot
+          # import key file") in MSBuild's MSIX packaging task. Trust on
+          # install with:
           #   Import-Certificate -FilePath AlMunadiWidget.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople
           $cert = New-SelfSignedCertificate `
             -Type CodeSigningCert `
@@ -50,21 +52,16 @@ jobs:
             -KeyUsage DigitalSignature `
             -FriendlyName "AlMunadi Widget Cert" `
             -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3","2.5.29.19={text}")
-          # Use $pfxPwd (not $pwd) — $PWD is a PowerShell automatic variable
-          # holding the current directory; overwriting it sends Export-PfxCertificate
-          # to a path like System.Security.SecureString\AlMunadiWidget.pfx and breaks.
-          $pfxPwd = ConvertTo-SecureString -String "ci-only" -Force -AsPlainText
-          $pfxPath = Join-Path (Get-Location) "AlMunadiWidget.pfx"
+          $thumb = $cert.Thumbprint
           $cerPath = Join-Path (Get-Location) "AlMunadiWidget.cer"
-          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $pfxPwd | Out-Null
           Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
+          Write-Host "Signing thumbprint: $thumb"
 
           dotnet publish -c Release -r win-x64 --self-contained `
             /p:Platform=x64 `
             /p:GenerateAppxPackageOnBuild=true `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateKeyFile=$pfxPath `
-            /p:PackageCertificatePassword=ci-only
+            /p:PackageCertificateThumbprint=$thumb
 
       - name: Locate MSIX
         id: locate_msix
