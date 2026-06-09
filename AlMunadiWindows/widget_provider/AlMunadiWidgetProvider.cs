@@ -20,7 +20,7 @@ namespace AlMunadi.Widget;
 [Guid("81b9ff95-40c9-44ca-a8d0-18f34e778b52")] // CLSID -- referenced from Package.appxmanifest
 public sealed class AlMunadiWidgetProvider : IWidgetProvider
 {
-    private sealed record ActiveWidget(string Id, string DefinitionId, string Size, Timer Timer);
+    private sealed record ActiveWidget(string Id, string DefinitionId, WidgetSize Size, Timer Timer);
 
     private readonly ConcurrentDictionary<string, ActiveWidget> _widgets = new();
     private readonly FileSystemWatcher? _watcher;
