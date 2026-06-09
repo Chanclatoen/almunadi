@@ -3,7 +3,7 @@ name: GNOME Release
 on:
   push:
     tags:
-      - "gnome-v*"
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -37,4 +37,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: "next-prayer@mawaqit.zip"
-          generate_release_notes: true

@@ -3,7 +3,7 @@ name: Linux Release
 on:
   push:
     tags:
-      - "linux-v*"
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -39,4 +39,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: NextPrayerLinux/dist/NextPrayer-Linux
-          generate_release_notes: true

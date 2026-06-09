@@ -3,7 +3,7 @@ name: macOS Release
 on:
   push:
     tags:
-      - "mac-v*"
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -77,4 +77,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: NextPrayerMac/dist/*.zip
-          generate_release_notes: true

@@ -110,21 +110,17 @@ Times refresh once per day (around midnight). Notifications are scheduled with p
 
 ## Releasing
 
-Each platform has its own CI/CD workflow triggered by git tags:
-
-| Platform | Tag pattern | Artifact |
-|----------|------------|----------|
-| macOS | `mac-v*` | `NextPrayer-macOS-*.zip` |
-| Windows | `win-v*` | `NextPrayer.exe` |
-| GNOME | `gnome-v*` | `next-prayer@mawaqit.zip` |
-| Linux | `linux-v*` | `NextPrayer-Linux` (AppImage) |
+A single version tag triggers all 4 platform builds, and all artifacts are attached to one GitHub Release:
 
 ```bash
-git tag mac-v1.1.0 && git push origin mac-v1.1.0
-git tag win-v1.1.0 && git push origin win-v1.1.0
-git tag gnome-v1.1.0 && git push origin gnome-v1.1.0
-git tag linux-v1.1.0 && git push origin linux-v1.1.0
+git tag v1.1.0 && git push origin v1.1.0
 ```
+
+This creates a release with:
+- `NextPrayer-macOS-*.zip` — macOS app
+- `NextPrayer.exe` — Windows executable
+- `NextPrayer-Linux` — Linux binary
+- `next-prayer@mawaqit.zip` — GNOME extension
 
 ## Testing
 
