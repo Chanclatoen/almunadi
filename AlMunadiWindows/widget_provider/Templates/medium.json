@@ -1,0 +1,109 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "ColumnSet",
+      "$when": "${hasData}",
+      "columns": [
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "${mosqueName}",
+              "size": "Small",
+              "isSubtle": true,
+              "wrap": true,
+              "maxLines": 1
+            },
+            {
+              "type": "TextBlock",
+              "text": "${nextPrayerName}",
+              "size": "Small",
+              "color": "Accent",
+              "weight": "Bolder",
+              "spacing": "Small"
+            },
+            {
+              "type": "TextBlock",
+              "text": "${nextPrayerTime}",
+              "size": "ExtraLarge",
+              "weight": "Bolder",
+              "spacing": "None"
+            },
+            {
+              "type": "TextBlock",
+              "text": "${countdown}",
+              "size": "Small",
+              "color": "Good"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "width": "stretch",
+          "items": [
+            {
+              "type": "Container",
+              "$data": "${prayers}",
+              "items": [
+                {
+                  "type": "ColumnSet",
+                  "columns": [
+                    {
+                      "type": "Column",
+                      "width": "stretch",
+                      "items": [
+                        {
+                          "type": "TextBlock",
+                          "text": "${name}",
+                          "weight": "${if(isNext, 'Bolder', 'Default')}",
+                          "color": "${if(isNext, 'Accent', 'Default')}",
+                          "size": "Small",
+                          "wrap": false
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Column",
+                      "width": "auto",
+                      "items": [
+                        {
+                          "type": "TextBlock",
+                          "text": "${time}",
+                          "weight": "${if(isNext, 'Bolder', 'Default')}",
+                          "color": "${if(isNext, 'Accent', 'Default')}",
+                          "size": "Small",
+                          "horizontalAlignment": "Right"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "$when": "${!hasData}",
+      "text": "${noDataLabel}",
+      "size": "Medium",
+      "isSubtle": true,
+      "horizontalAlignment": "Center",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Execute",
+      "verb": "refresh",
+      "title": "↻"
+    }
+  ]
+}

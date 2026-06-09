@@ -126,6 +126,14 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
         settings.bind('notifications-enabled', notifRow, 'active',
             Gio.SettingsBindFlags.DEFAULT);
         notifGroup.add(notifRow);
+
+        const dndBypassRow = new Adw.SwitchRow({
+            title: 'Break through Do Not Disturb',
+            subtitle: 'Show prayer notifications even when DND is active',
+        });
+        settings.bind('dnd-bypass', dndBypassRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        notifGroup.add(dndBypassRow);
+
         page.add(notifGroup);
 
         // --- Language group ---
@@ -278,7 +286,7 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
         const getPrayerNotifSettings = () => {
             const defaults = {};
             for (const key of PRAYER_NOTIF_KEYS)
-                defaults[key] = {enabled: true, reminder_minutes: 0, adhan_enabled: null};
+                defaults[key] = {enabled: true, reminder_minutes: 0, adhan_enabled: null, dnd_bypass: null};
             try {
                 const stored = JSON.parse(settings.get_string('prayer-notification-settings') || '{}');
                 for (const key of PRAYER_NOTIF_KEYS) {
@@ -287,6 +295,7 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
                             enabled: stored[key].enabled !== false,
                             reminder_minutes: Math.max(0, parseInt(stored[key].reminder_minutes) || 0),
                             adhan_enabled: stored[key].adhan_enabled ?? null,
+                            dnd_bypass: stored[key].dnd_bypass ?? null,
                         };
                     }
                 }
@@ -355,6 +364,25 @@ export default class NextPrayerPreferences extends ExtensionPreferences {
                 savePrayerNotifSettings(data);
             });
             row.add_row(adhanRow);
+
+            const dndModel = new Gtk.StringList();
+            dndModel.append('Use global setting');
+            dndModel.append('Always bypass');
+            dndModel.append('Never bypass');
+
+            const dndRow = new Adw.ComboRow({
+                title: 'DND bypass',
+                model: dndModel,
+            });
+            const dndVal = getPrayerNotifSettings()[key].dnd_bypass;
+            dndRow.set_selected(dndVal === true ? 1 : dndVal === false ? 2 : 0);
+            dndRow.connect('notify::selected', () => {
+                const data = getPrayerNotifSettings();
+                const idx = dndRow.get_selected();
+                data[key].dnd_bypass = idx === 1 ? true : idx === 2 ? false : null;
+                savePrayerNotifSettings(data);
+            });
+            row.add_row(dndRow);
 
             perPrayerGroup.add(row);
             notifRows[key] = {enabledRow, reminderRow, adhanRow};

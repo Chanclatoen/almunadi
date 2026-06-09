@@ -50,5 +50,8 @@
   "paste_url": "أو الصق الرابط مباشرة",
   "paste_url_hint": "اذهب إلى mawaqit.net وابحث عن مسجدك والصق الرابط",
   "connected_mosque": "المسجد المتصل",
+  "hijri_date": "التاريخ الهجري",
+  "qibla": "القبلة",
+  "since_last_prayer": "منذ {name}",
   "help": "مساعدة"
 }

@@ -1,0 +1,184 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "$when": "${hasData}",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "${mosqueName}",
+                  "size": "Small",
+                  "isSubtle": true,
+                  "wrap": true,
+                  "maxLines": 1
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${nextPrayerName}",
+                  "size": "Medium",
+                  "color": "Accent",
+                  "weight": "Bolder",
+                  "spacing": "Small"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "${nextPrayerTime}",
+                  "size": "ExtraLarge",
+                  "weight": "Bolder",
+                  "horizontalAlignment": "Right"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${countdown}",
+                  "size": "Small",
+                  "color": "Good",
+                  "horizontalAlignment": "Right",
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Container",
+          "separator": true,
+          "spacing": "Medium",
+          "items": [
+            {
+              "type": "ColumnSet",
+              "$data": "${prayers}",
+              "spacing": "Small",
+              "columns": [
+                {
+                  "type": "Column",
+                  "width": "stretch",
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${name}",
+                      "weight": "${if(isNext, 'Bolder', 'Default')}",
+                      "color": "${if(isNext, 'Accent', 'Default')}",
+                      "wrap": false
+                    }
+                  ]
+                },
+                {
+                  "type": "Column",
+                  "width": "auto",
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${iqama}",
+                      "size": "Small",
+                      "isSubtle": true,
+                      "horizontalAlignment": "Right"
+                    }
+                  ]
+                },
+                {
+                  "type": "Column",
+                  "width": "auto",
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${time}",
+                      "weight": "${if(isNext, 'Bolder', 'Default')}",
+                      "color": "${if(isNext, 'Accent', 'Default')}",
+                      "horizontalAlignment": "Right"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "separator": true,
+          "spacing": "Medium",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "${shuruqLabel}",
+                  "size": "Small",
+                  "isSubtle": true,
+                  "spacing": "None"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${shuruq}",
+                  "size": "Small",
+                  "weight": "Bolder",
+                  "spacing": "None"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "${qiblaLabel}",
+                  "size": "Small",
+                  "isSubtle": true,
+                  "spacing": "None"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${qibla}",
+                  "size": "Small",
+                  "weight": "Bolder",
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "${hijriDate}",
+          "size": "Small",
+          "isSubtle": true,
+          "spacing": "Medium"
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "$when": "${!hasData}",
+      "text": "${noDataLabel}",
+      "size": "Medium",
+      "isSubtle": true,
+      "horizontalAlignment": "Center",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Execute",
+      "verb": "refresh",
+      "title": "↻"
+    }
+  ]
+}

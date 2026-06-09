@@ -22,11 +22,13 @@ struct PrayerNotificationSetting: Codable {
     var enabled: Bool = true
     var reminderMinutes: Int = 0
     var adhanEnabled: Bool? = nil
+    var dndBypass: Bool? = nil
 
     enum CodingKeys: String, CodingKey {
         case enabled
         case reminderMinutes = "reminder_minutes"
         case adhanEnabled = "adhan_enabled"
+        case dndBypass = "dnd_bypass"
     }
 }
 
@@ -163,6 +165,13 @@ enum PrayerSettingsDefaults {
 
     static func shouldPlayAdhan(_ setting: PrayerNotificationSetting, globalEnabled: Bool) -> Bool {
         if let perPrayer = setting.adhanEnabled {
+            return perPrayer
+        }
+        return globalEnabled
+    }
+
+    static func shouldBypassDnd(_ setting: PrayerNotificationSetting, globalEnabled: Bool) -> Bool {
+        if let perPrayer = setting.dndBypass {
             return perPrayer
         }
         return globalEnabled

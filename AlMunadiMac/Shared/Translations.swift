@@ -68,6 +68,7 @@ struct Translations {
             "hijri_date": "Hijri date",
             "qibla": "Qibla",
             "since_last_prayer": "Since %@",
+            "dnd_bypass": "Break through Do Not Disturb",
         ],
         "nl": [
             "fajr": "Fajr",
@@ -133,6 +134,7 @@ struct Translations {
             "hijri_date": "Hijri-datum",
             "qibla": "Qibla",
             "since_last_prayer": "Sinds %@",
+            "dnd_bypass": "Niet storen doorbreken",
         ],
         "ar": [
             "fajr": "فجر",
@@ -180,6 +182,10 @@ struct Translations {
             "no_saved_mosques": "لا مساجد محفوظة",
             "switch_to": "التبديل إلى...",
             "update_available": "تحديث متاح",
+            "dnd_bypass": "تجاوز وضع عدم الإزعاج",
+            "hijri_date": "التاريخ الهجري",
+            "qibla": "القبلة",
+            "since_last_prayer": "منذ %@",
         ],
         "fr": [
             "fajr": "Fajr",
@@ -227,6 +233,10 @@ struct Translations {
             "no_saved_mosques": "Aucune mosquee enregistree",
             "switch_to": "Changer pour...",
             "update_available": "Mise à jour disponible",
+            "dnd_bypass": "Passer le mode Ne pas deranger",
+            "hijri_date": "Date hegirienne",
+            "qibla": "Qibla",
+            "since_last_prayer": "Depuis %@",
         ],
         "tr": [
             "fajr": "Sabah",
@@ -274,15 +284,29 @@ struct Translations {
             "no_saved_mosques": "Kayitli cami yok",
             "switch_to": "Degistir...",
             "update_available": "Güncelleme mevcut",
+            "dnd_bypass": "Rahatsiz Etmeyin modunu as",
+            "hijri_date": "Hicri tarih",
+            "qibla": "Kible",
+            "since_last_prayer": "%@'dan beri",
         ],
     ]
 
+    /// Per-process language override. The widget extension sets this from
+    /// the App Group snapshot at the start of `getTimeline`; the main app
+    /// leaves it nil and falls back to `UserDefaults.standard`.
+    static var activeLanguage: String?
+
     var currentLanguage: String {
-        UserDefaults.standard.string(forKey: "language") ?? "en"
+        if let active = Self.activeLanguage { return active }
+        return UserDefaults.standard.string(forKey: "language") ?? "en"
     }
 
     func t(_ key: String) -> String {
-        strings[currentLanguage]?[key] ?? strings["en"]?[key] ?? key
+        t(key, language: currentLanguage)
+    }
+
+    func t(_ key: String, language: String) -> String {
+        strings[language]?[key] ?? strings["en"]?[key] ?? key
     }
 
     func prayerNameKey(for prayer: PrayerName) -> String {
@@ -296,7 +320,11 @@ struct Translations {
     }
 
     func translatedPrayerName(_ prayer: PrayerName) -> String {
-        t(prayerNameKey(for: prayer))
+        translatedPrayerName(prayer, language: currentLanguage)
+    }
+
+    func translatedPrayerName(_ prayer: PrayerName, language: String) -> String {
+        t(prayerNameKey(for: prayer), language: language)
     }
 
     static let supportedLanguages: [(code: String, label: String)] = [

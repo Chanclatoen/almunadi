@@ -81,6 +81,8 @@ TRANSLATIONS = {
         "hijri_date": "Hijri date",
         "qibla": "Qibla",
         "since_last_prayer": "Since {name}",
+        "dnd_bypass": "Break through Do Not Disturb",
+        "dnd_bypass_per_prayer": "DND bypass",
     },
     "nl": {
         "prayer_fajr": "Fajr",
@@ -149,6 +151,8 @@ TRANSLATIONS = {
         "hijri_date": "Hijri-datum",
         "qibla": "Qibla",
         "since_last_prayer": "Sinds {name}",
+        "dnd_bypass": "Niet storen doorbreken",
+        "dnd_bypass_per_prayer": "Niet storen",
     },
     "ar": {
         "prayer_fajr": "فجر",
@@ -202,6 +206,11 @@ TRANSLATIONS = {
         "search_failed": "فشل البحث",
         "no_prayer_times": "لا توجد أوقات صلاة",
         "update_available": "تحديث متاح",
+        "dnd_bypass": "تجاوز وضع عدم الإزعاج",
+        "dnd_bypass_per_prayer": "تجاوز عدم الإزعاج",
+        "hijri_date": "التاريخ الهجري",
+        "qibla": "القبلة",
+        "since_last_prayer": "منذ {name}",
     },
     "fr": {
         "prayer_fajr": "Fajr",
@@ -255,6 +264,11 @@ TRANSLATIONS = {
         "search_failed": "La recherche a echoue",
         "no_prayer_times": "Aucun horaire de priere charge",
         "update_available": "Mise a jour disponible",
+        "dnd_bypass": "Passer le mode Ne pas deranger",
+        "dnd_bypass_per_prayer": "Ne pas deranger",
+        "hijri_date": "Date hegirienne",
+        "qibla": "Qibla",
+        "since_last_prayer": "Depuis {name}",
     },
     "tr": {
         "prayer_fajr": "Sabah",
@@ -308,6 +322,11 @@ TRANSLATIONS = {
         "search_failed": "Arama basarisiz",
         "no_prayer_times": "Namaz vakti yuklenmedi",
         "update_available": "Guncelleme mevcut",
+        "dnd_bypass": "Rahatsiz Etmeyin modunu as",
+        "dnd_bypass_per_prayer": "Rahatsiz Etmeyin",
+        "hijri_date": "Hicri tarih",
+        "qibla": "Kible",
+        "since_last_prayer": "{name}'dan beri",
     },
 }
 
@@ -385,6 +404,7 @@ SETTINGS_DEFAULTS = {
     "adhan_path": "",
     "display_mode": "countdown",
     "countdown_format": "compact",
+    "dnd_bypass": True,
         "saved_mosques": [],
     }
 
@@ -714,7 +734,7 @@ def apply_offset(time_str, offset_minutes):
 
 def default_prayer_notification_settings():
     return {
-        key: {"enabled": True, "reminder_minutes": 0, "adhan_enabled": None}
+        key: {"enabled": True, "reminder_minutes": 0, "adhan_enabled": None, "dnd_bypass": None}
         for key in NOTIFICATION_PRAYER_KEYS
     }
 
@@ -734,6 +754,7 @@ def merge_prayer_notification_settings(stored):
                 "enabled": entry.get("enabled", True) is not False,
                 "reminder_minutes": max(0, int(entry.get("reminder_minutes") or 0)),
                 "adhan_enabled": entry.get("adhan_enabled"),
+                "dnd_bypass": entry.get("dnd_bypass"),
             }
     return merged
 
@@ -761,6 +782,14 @@ def should_play_adhan(prayer_setting, global_adhan_enabled):
     if prayer_setting.get("adhan_enabled") is False:
         return False
     return bool(global_adhan_enabled)
+
+
+def should_bypass_dnd(prayer_setting, global_dnd_bypass):
+    if prayer_setting.get("dnd_bypass") is True:
+        return True
+    if prayer_setting.get("dnd_bypass") is False:
+        return False
+    return bool(global_dnd_bypass)
 
 
 def apply_prayer_offsets(times, offsets):

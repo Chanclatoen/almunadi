@@ -1,0 +1,51 @@
+-- Al Munadi -- Conky medium widget
+-- Shows all 5 prayers with the next one highlighted, plus countdown.
+-- Copy this file + almunadi.lua to ~/.config/AlMunadi/conky/ and run:
+--   conky -c ~/.config/AlMunadi/conky/almunadi-medium.conkyrc &
+
+conky.config = {
+    alignment = 'top_right',
+    gap_x = 20,
+    gap_y = 60,
+    minimum_width = 280,
+    minimum_height = 280,
+    maximum_width = 280,
+
+    own_window = true,
+    own_window_type = 'desktop',
+    own_window_transparent = true,
+    own_window_argb_visual = true,
+    own_window_argb_value = 180,
+    own_window_class = 'AlMunadi',
+    own_window_title = 'Al Munadi',
+    own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+
+    background = false,
+    double_buffer = true,
+    update_interval = 1.0,
+
+    use_xft = true,
+    font = 'DejaVu Sans:size=10',
+    xftalpha = 0.9,
+    default_color = 'E8E8E8',
+    color1 = '4A90D9',  -- accent
+    color2 = '8899AA',  -- secondary text
+    color3 = 'FFB74D',  -- next-prayer highlight
+    border_inner_margin = 14,
+    border_outer_margin = 0,
+
+    lua_load = os.getenv('HOME') .. '/.config/AlMunadi/conky/almunadi.lua',
+}
+
+-- Each row uses ${if_match} to highlight the next prayer.
+conky.text = [[
+${color2}${lua conky_mosque_name}${color}
+${color1}${font DejaVu Sans:bold:size=13}${lua conky_next_name} ${lua conky_next_time}${font}${color}
+${color2}${lua conky_countdown}${color}
+${voffset 8}${hr 1}${voffset 4}
+${if_match "${lua conky_is_next 1}" == "1"}${color3}${else}${color}${endif}${lua conky_prayer_name 1}${alignr}${lua conky_prayer_time 1}${color}
+${if_match "${lua conky_is_next 2}" == "1"}${color3}${else}${color}${endif}${lua conky_prayer_name 2}${alignr}${lua conky_prayer_time 2}${color}
+${if_match "${lua conky_is_next 3}" == "1"}${color3}${else}${color}${endif}${lua conky_prayer_name 3}${alignr}${lua conky_prayer_time 3}${color}
+${if_match "${lua conky_is_next 4}" == "1"}${color3}${else}${color}${endif}${lua conky_prayer_name 4}${alignr}${lua conky_prayer_time 4}${color}
+${if_match "${lua conky_is_next 5}" == "1"}${color3}${else}${color}${endif}${lua conky_prayer_name 5}${alignr}${lua conky_prayer_time 5}${color}
+]]

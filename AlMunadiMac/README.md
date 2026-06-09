@@ -38,6 +38,7 @@ If you edit `project.yml`, regenerate the project with `xcodegen generate`.
 ## Features
 
 - **Menu bar display** — next prayer name, time, and live countdown with contextual icons (sunrise, sun, clouds, sunset, moon)
+- **Desktop widget** (small / medium / large, macOS 14+) — next prayer + countdown, all 5 prayers, or full layout with iqama, Hijri date and Qibla direction; reloads at each prayer-time transition. Add via right-click on the desktop → **Edit Widgets** → Al Munadi.
 - **Prayer times dropdown** — click to see all 5 prayers + Shuruq, with the next prayer highlighted in blue
 - **Iqama times** — shown under each prayer when your mosque provides them
 - **Jumuah support** — automatically shows Friday prayer time instead of Dhuhr, plus Jumuah 2 if available
@@ -69,6 +70,16 @@ Settings are stored in macOS `UserDefaults` (standard for native apps). Cached p
 | Mosque URL | Your mosque's Mawaqit URL |
 | Prayer notifications | Toggle desktop notifications on/off |
 | Launch at login | Start AlMunadi when you log in |
+
+## Widget data sharing (App Group)
+
+The widget extension reads from the App Group `group.net.almunadi.AlMunadi`. The main app writes the prayer snapshot to this group after every successful Mawaqit fetch via `WidgetSharedStore.saveSnapshot(...)` and calls `WidgetCenter.shared.reloadAllTimelines()` so the widget refreshes immediately.
+
+**Team ID prefix for distribution**: the current App Group identifier works locally with ad-hoc signing. For a notarized release through an Apple Developer team, App Groups must be prefixed with the team ID — e.g. `group.<TEAMID>.almunadi`. When a team ID is wired in:
+
+1. Update `com.apple.security.application-groups` in both `AlMunadi/AlMunadi.entitlements` and `AlMunadiWidget/AlMunadiWidget.entitlements`.
+2. Update the `appGroupID` constant in `Shared/WidgetSharedStore.swift`.
+3. Register the new App Group on developer.apple.com under the team's identifiers.
 
 ## Releasing
 

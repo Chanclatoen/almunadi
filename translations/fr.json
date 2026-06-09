@@ -50,5 +50,8 @@
   "paste_url": "Ou collez l’URL directement",
   "paste_url_hint": "Allez sur mawaqit.net, trouvez votre mosquée et collez l’URL",
   "connected_mosque": "Mosquée connectée",
+  "hijri_date": "Date hégirienne",
+  "qibla": "Qibla",
+  "since_last_prayer": "Depuis {name}",
   "help": "Aide"
 }

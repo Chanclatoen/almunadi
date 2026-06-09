@@ -58,6 +58,7 @@ const TRANSLATIONS = {
         hijriDate: 'Hijri date',
         qibla: 'Qibla',
         sinceLastPrayer: (name) => `Since ${name}`,
+        dnd_bypass: 'Break through Do Not Disturb',
     },
     nl: {
         prayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
@@ -83,6 +84,7 @@ const TRANSLATIONS = {
         hijriDate: 'Hijri-datum',
         qibla: 'Qibla',
         sinceLastPrayer: (name) => `Sinds ${name}`,
+        dnd_bypass: 'Niet storen doorbreken',
     },
     ar: {
         prayers: ['فجر', 'ظهر', 'عصر', 'مغرب', 'عشاء'],
@@ -105,6 +107,10 @@ const TRANSLATIONS = {
         mosques: 'المساجد',
         saveCurrent: 'حفظ المسجد الحالي',
         updateAvailable: 'تحديث متاح',
+        dnd_bypass: 'تجاوز وضع عدم الإزعاج',
+        hijriDate: 'التاريخ الهجري',
+        qibla: 'القبلة',
+        sinceLastPrayer: (name) => `منذ ${name}`,
     },
     fr: {
         prayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
@@ -127,6 +133,10 @@ const TRANSLATIONS = {
         mosques: 'Mosquées',
         saveCurrent: 'Sauvegarder la mosquée actuelle',
         updateAvailable: 'Mise à jour disponible',
+        dnd_bypass: 'Passer le mode Ne pas deranger',
+        hijriDate: 'Date hégirienne',
+        qibla: 'Qibla',
+        sinceLastPrayer: (name) => `Depuis ${name}`,
     },
     tr: {
         prayers: ['Sabah', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'],
@@ -149,6 +159,10 @@ const TRANSLATIONS = {
         mosques: 'Camiler',
         saveCurrent: 'Mevcut camiyi kaydet',
         updateAvailable: 'Güncelleme mevcut',
+        dnd_bypass: 'Rahatsiz Etmeyin modunu as',
+        hijriDate: 'Hicri tarih',
+        qibla: 'Kıble',
+        sinceLastPrayer: (name) => `${name}'dan beri`,
     },
 };
 
@@ -651,7 +665,7 @@ export default class NextPrayerExtension extends Extension {
         const keys = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha', 'Jumuah'];
         const settings = {};
         for (const key of keys)
-            settings[key] = {enabled: true, reminder_minutes: 0, adhan_enabled: null};
+            settings[key] = {enabled: true, reminder_minutes: 0, adhan_enabled: null, dnd_bypass: null};
         try {
             const stored = JSON.parse(this._settings.get_string('prayer-notification-settings') || '{}');
             for (const key of keys) {
@@ -660,6 +674,7 @@ export default class NextPrayerExtension extends Extension {
                         enabled: stored[key].enabled !== false,
                         reminder_minutes: Math.max(0, parseInt(stored[key].reminder_minutes) || 0),
                         adhan_enabled: stored[key].adhan_enabled ?? null,
+                        dnd_bypass: stored[key].dnd_bypass ?? null,
                     };
                 }
             }
@@ -679,6 +694,12 @@ export default class NextPrayerExtension extends Extension {
         if (prayerSetting?.adhan_enabled === true) return true;
         if (prayerSetting?.adhan_enabled === false) return false;
         return this._settings.get_boolean('adhan-enabled');
+    }
+
+    _shouldBypassDnd(prayerSetting) {
+        if (prayerSetting?.dnd_bypass === true) return true;
+        if (prayerSetting?.dnd_bypass === false) return false;
+        return this._settings.get_boolean('dnd-bypass');
     }
 
     _formatQiblaDirection(latitude, longitude) {
@@ -1108,12 +1129,14 @@ export default class NextPrayerExtension extends Extension {
             const time = event.time;
             const prayerSeconds = event.absoluteMinutes * 60;
 
+            const bypassDnd = this._shouldBypassDnd(setting);
+
             const reminderMinutes = setting.reminder_minutes || 0;
             if (reminderMinutes > 0) {
                 const reminderDelay = prayerSeconds - (reminderMinutes * 60) - nowSeconds;
                 if (reminderDelay > 0) {
                     const reminderId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, reminderDelay, () => {
-                        this._sendReminderNotification(name, reminderMinutes);
+                        this._sendReminderNotification(name, reminderMinutes, bypassDnd);
                         return GLib.SOURCE_REMOVE;
                     });
                     this._notificationTimers.push(reminderId);
@@ -1124,7 +1147,7 @@ export default class NextPrayerExtension extends Extension {
             if (delay <= 0) continue;
 
             const id = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
-                this._sendNotification(name, time);
+                this._sendNotification(name, time, bypassDnd);
                 if (this._shouldPlayAdhan(setting))
                     this._maybePlayAdhan(true);
                 this._updateLabel();
@@ -1134,7 +1157,7 @@ export default class NextPrayerExtension extends Extension {
         }
     }
 
-    _sendReminderNotification(prayerName, minutes) {
+    _sendReminderNotification(prayerName, minutes, bypassDnd = false) {
         const title = this._t('notifTitle')(prayerName, `${minutes}m`);
         const body = `${prayerName} in ${minutes} minutes`;
         const source = MessageTray.getSystemSource();
@@ -1144,11 +1167,13 @@ export default class NextPrayerExtension extends Extension {
             body,
             iconName: 'preferences-system-time-symbolic',
         });
-        notification.urgency = MessageTray.Urgency.NORMAL;
+        notification.urgency = bypassDnd
+            ? MessageTray.Urgency.CRITICAL
+            : MessageTray.Urgency.NORMAL;
         source.addNotification(notification);
     }
 
-    _sendNotification(prayerName, time) {
+    _sendNotification(prayerName, time, bypassDnd = false) {
         const title = this._t('notifTitle')(prayerName, time);
         const body = this._t('notifBody')(prayerName);
         const source = MessageTray.getSystemSource();
@@ -1158,7 +1183,9 @@ export default class NextPrayerExtension extends Extension {
             body,
             iconName: 'preferences-system-time-symbolic',
         });
-        notification.urgency = MessageTray.Urgency.HIGH;
+        notification.urgency = bypassDnd
+            ? MessageTray.Urgency.CRITICAL
+            : MessageTray.Urgency.HIGH;
         source.addNotification(notification);
     }
 

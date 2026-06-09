@@ -1,0 +1,60 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "$when": "${hasData}",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${nextPrayerName}",
+          "size": "Small",
+          "color": "Accent",
+          "weight": "Bolder",
+          "wrap": true
+        },
+        {
+          "type": "TextBlock",
+          "text": "${nextPrayerTime}",
+          "size": "ExtraLarge",
+          "weight": "Bolder",
+          "spacing": "None"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${countdown}",
+          "size": "Small",
+          "color": "Good",
+          "spacing": "Small"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${mosqueName}",
+          "size": "Small",
+          "isSubtle": true,
+          "wrap": true,
+          "spacing": "Small",
+          "maxLines": 1
+        }
+      ]
+    },
+    {
+      "type": "TextBlock",
+      "$when": "${!hasData}",
+      "text": "${noDataLabel}",
+      "size": "Medium",
+      "isSubtle": true,
+      "horizontalAlignment": "Center",
+      "wrap": true
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Execute",
+      "verb": "refresh",
+      "title": "↻"
+    }
+  ]
+}

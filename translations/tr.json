@@ -50,5 +50,8 @@
   "paste_url": "Veya URL’yi yapıştırın",
   "paste_url_hint": "mawaqit.net’e gidin, caminizi bulun ve URL’yi yapıştırın",
   "connected_mosque": "Bağlı Cami",
+  "hijri_date": "Hicri tarih",
+  "qibla": "Kıble",
+  "since_last_prayer": "{name}'dan beri",
   "help": "Yardım"
 }

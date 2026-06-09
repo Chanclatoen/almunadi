@@ -166,6 +166,11 @@ struct SettingsView: View {
                             Text(t("adhan_on")).tag(Optional(true))
                             Text(t("adhan_off")).tag(Optional(false))
                         }
+                        Picker(t("dnd_bypass"), selection: prayerDndBypassBinding(for: key)) {
+                            Text(t("adhan_global")).tag(Optional<Bool>.none)
+                            Text(t("adhan_on")).tag(Optional(true))
+                            Text(t("adhan_off")).tag(Optional(false))
+                        }
                     }
                 }
             }
@@ -186,6 +191,7 @@ struct SettingsView: View {
 
             Section(t("notifications")) {
                 Toggle(t("prayer_notifications"), isOn: notificationsBinding)
+                Toggle(t("dnd_bypass"), isOn: dndBypassBinding)
             }
 
             // MARK: - Adhan
@@ -267,6 +273,19 @@ struct SettingsView: View {
         )
     }
 
+    private func prayerDndBypassBinding(for key: String) -> Binding<Bool?> {
+        Binding(
+            get: { service.prayerNotificationSettings[key]?.dndBypass },
+            set: { newValue in
+                var settings = service.prayerNotificationSettings
+                var entry = settings[key] ?? PrayerNotificationSetting()
+                entry.dndBypass = newValue
+                settings[key] = entry
+                service.prayerNotificationSettings = settings
+            }
+        )
+    }
+
     private func prayerOffsetBinding(for key: String) -> Binding<Int> {
         Binding(
             get: { service.prayerOffsets[key] ?? 0 },
@@ -303,6 +322,13 @@ struct SettingsView: View {
         Binding(
             get: { service.adhanEnabled },
             set: { service.adhanEnabled = $0 }
+        )
+    }
+
+    private var dndBypassBinding: Binding<Bool> {
+        Binding(
+            get: { service.dndBypass },
+            set: { service.dndBypass = $0 }
         )
     }
 

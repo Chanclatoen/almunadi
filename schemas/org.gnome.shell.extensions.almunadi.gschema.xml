@@ -56,5 +56,10 @@
       <summary>Saved mosques</summary>
       <description>JSON array of saved mosques with url and name</description>
     </key>
+    <key name="dnd-bypass" type="b">
+      <default>true</default>
+      <summary>Break through Do Not Disturb</summary>
+      <description>Show prayer notifications even when GNOME Do Not Disturb is active</description>
+    </key>
   </schema>
 </schemalist>

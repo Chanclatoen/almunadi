@@ -1,0 +1,43 @@
+-- Al Munadi -- Conky small widget
+-- Shows the next prayer name, time, and countdown.
+-- Copy this file + almunadi.lua to ~/.config/AlMunadi/conky/ and run:
+--   conky -c ~/.config/AlMunadi/conky/almunadi-small.conkyrc &
+
+conky.config = {
+    alignment = 'top_right',
+    gap_x = 20,
+    gap_y = 60,
+    minimum_width = 220,
+    minimum_height = 90,
+    maximum_width = 220,
+
+    own_window = true,
+    own_window_type = 'desktop',
+    own_window_transparent = true,
+    own_window_argb_visual = true,
+    own_window_argb_value = 180,
+    own_window_class = 'AlMunadi',
+    own_window_title = 'Al Munadi',
+    own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+
+    background = false,
+    double_buffer = true,
+    update_interval = 1.0,
+
+    use_xft = true,
+    font = 'DejaVu Sans:size=10',
+    xftalpha = 0.9,
+    default_color = 'E8E8E8',
+    color1 = '4A90D9',  -- accent
+    color2 = '8899AA',  -- secondary text
+    border_inner_margin = 12,
+    border_outer_margin = 0,
+
+    lua_load = os.getenv('HOME') .. '/.config/AlMunadi/conky/almunadi.lua',
+}
+
+conky.text = [[
+${color1}${font DejaVu Sans:bold:size=11}${lua conky_next_name}${font}${color}  ${color2}${lua conky_mosque_name}${color}
+${font DejaVu Sans:bold:size=22}${lua conky_next_time}${font}
+${color1}${lua conky_countdown}${color}
+]]

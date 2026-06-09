@@ -1,6 +1,7 @@
 import os
 import json
 import shutil
+import subprocess
 import threading
 import time
 import ctypes
@@ -123,6 +124,7 @@ from core.al_munadi_core import (
     merge_prayer_offsets,
     notification_key_for_index,
     should_play_adhan,
+    should_bypass_dnd,
     apply_prayer_offsets,
     format_tray_title,
     check_for_update,
@@ -216,7 +218,10 @@ def create_icon_image(prayer_name):
     return img.resize((64, 64), Image.LANCZOS)
 
 
-def send_notification(prayer_name, time_str):
+def send_notification(prayer_name, time_str, bypass_dnd=False):
+    if bypass_dnd:
+        _send_toast_bypass_dnd(prayer_name, time_str)
+        return
     translated_name = _translate_prayer(prayer_name)
     toast = Notification(
         app_id=APP_NAME,
@@ -225,6 +230,40 @@ def send_notification(prayer_name, time_str):
     )
     toast.set_audio(audio.Default, loop=False)
     toast.show()
+
+
+def _send_toast_bypass_dnd(prayer_name, time_str):
+    translated_name = _translate_prayer(prayer_name)
+    title = t("notification_title", name=translated_name, time=time_str)
+    body = t("notification_body", name=translated_name)
+    ps_script = (
+        '[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null\n'
+        '[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null\n'
+        '$xml = New-Object Windows.Data.Xml.Dom.XmlDocument\n'
+        '$xml.LoadXml(@"\n'
+        '<toast scenario=""alarm"" duration=""short"">\n'
+        '  <visual><binding template=""ToastGeneric"">\n'
+        '    <text><![CDATA[' + title + ']]></text>\n'
+        '    <text><![CDATA[' + body + ']]></text>\n'
+        '  </binding></visual>\n'
+        '  <audio src=""ms-winsoundevent:Notification.Default"" loop=""false"" />\n'
+        '</toast>\n'
+        '"@)\n'
+        '$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("' + APP_NAME + '")\n'
+        '$notifier.Show([Windows.UI.Notifications.ToastNotification]::new($xml))'
+    )
+    try:
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        subprocess.Popen(
+            ["powershell.exe", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            startupinfo=si,
+        )
+    except Exception:
+        pass
 
 
 def _play_adhan(path):
@@ -782,6 +821,22 @@ class SettingsWindow:
         )
         notif_cb.pack(anchor="w", padx=inner_pad)
 
+        self.dnd_bypass_var = tk.BooleanVar(value=app.settings.get("dnd_bypass", True))
+        dnd_cb = tk.Checkbutton(
+            main,
+            text=f"  {t('dnd_bypass')}",
+            variable=self.dnd_bypass_var,
+            font=(FONT_FAMILY, 11),
+            fg=TEXT_PRIMARY,
+            bg=BG_COLOR,
+            selectcolor=CARD_COLOR,
+            activebackground=BG_COLOR,
+            activeforeground=TEXT_PRIMARY,
+            bd=0,
+            highlightthickness=0,
+        )
+        dnd_cb.pack(anchor="w", padx=inner_pad)
+
         # --- Adhan section ---
         self._build_divider(main, inner_pad)
         self._build_section_header(main, t("adhan"), inner_pad)
@@ -895,10 +950,18 @@ class SettingsWindow:
                 state="readonly", style="Dark.TCombobox", width=8,
             ).pack(side="left", padx=(8, 0))
 
+            dnd_val = notif_settings.get(key, {}).get("dnd_bypass")
+            dnd_var = tk.StringVar(value="global" if dnd_val is None else ("on" if dnd_val else "off"))
+            ttk.Combobox(
+                row, textvariable=dnd_var, values=["global", "on", "off"],
+                state="readonly", style="Dark.TCombobox", width=8,
+            ).pack(side="left", padx=(8, 0))
+
             self._prayer_notif_vars[key] = {
                 "enabled": enabled_var,
                 "reminder": reminder_var,
                 "adhan": adhan_var,
+                "dnd_bypass": dnd_var,
             }
 
         # --- Manual offsets ---
@@ -1125,15 +1188,19 @@ class SettingsWindow:
         self.app.settings["adhan_enabled"] = self.adhan_var.get()
         self.app.settings["adhan_path"] = self.adhan_path_var.get()
         self.app.settings["notifications_enabled"] = self.notif_var.get()
+        self.app.settings["dnd_bypass"] = self.dnd_bypass_var.get()
 
         notif_settings = {}
         for key, vars_dict in self._prayer_notif_vars.items():
             adhan_sel = vars_dict["adhan"].get()
             adhan_enabled = None if adhan_sel == "global" else adhan_sel == "on"
+            dnd_sel = vars_dict["dnd_bypass"].get()
+            dnd_enabled = None if dnd_sel == "global" else dnd_sel == "on"
             notif_settings[key] = {
                 "enabled": vars_dict["enabled"].get(),
                 "reminder_minutes": vars_dict["reminder"].get(),
                 "adhan_enabled": adhan_enabled,
+                "dnd_bypass": dnd_enabled,
             }
         self.app.settings["prayer_notification_settings"] = merge_prayer_notification_settings(notif_settings)
 
@@ -1238,6 +1305,7 @@ class NextPrayerApp:
             "prayer_notification_settings", default_prayer_notification_settings()
         )
         global_adhan = self.settings.get("adhan_enabled", False)
+        global_dnd = self.settings.get("dnd_bypass", True)
         adhan_path = self.settings.get("adhan_path", "")
 
         events = prayer_datetime_events(display_times, now)
@@ -1254,6 +1322,9 @@ class NextPrayerApp:
 
             name = display_names[i]
 
+            play_adhan = should_play_adhan(setting, global_adhan)
+            bypass_dnd = should_bypass_dnd(setting, global_dnd)
+
             reminder_minutes = setting.get("reminder_minutes", 0) or 0
             if reminder_minutes > 0:
                 reminder_dt = dt - timedelta(minutes=reminder_minutes)
@@ -1262,7 +1333,7 @@ class NextPrayerApp:
                     timer = threading.Timer(
                         reminder_delay,
                         self._fire_reminder_notification,
-                        args=(name, reminder_minutes),
+                        args=(name, reminder_minutes, bypass_dnd),
                     )
                     timer.daemon = True
                     timer.start()
@@ -1270,17 +1341,19 @@ class NextPrayerApp:
 
             delay = (dt - now).total_seconds()
             if delay > 0:
-                play_adhan = should_play_adhan(setting, global_adhan)
                 timer = threading.Timer(
                     delay,
                     self._fire_notification,
-                    args=(name, t_str, play_adhan, adhan_path),
+                    args=(name, t_str, play_adhan, adhan_path, bypass_dnd),
                 )
                 timer.daemon = True
                 timer.start()
                 self.notification_timers.append(timer)
 
-    def _fire_reminder_notification(self, name, minutes):
+    def _fire_reminder_notification(self, name, minutes, bypass_dnd=False):
+        if bypass_dnd:
+            _send_toast_bypass_dnd(name, f"{minutes}m")
+            return
         translated = _translate_prayer(name)
         toast = Notification(
             app_id=APP_NAME,
@@ -1290,11 +1363,11 @@ class NextPrayerApp:
         toast.set_audio(audio.Default, loop=False)
         toast.show()
 
-    def _fire_notification(self, name, time_str, play_adhan=False, adhan_path=""):
+    def _fire_notification(self, name, time_str, play_adhan=False, adhan_path="", bypass_dnd=False):
         if play_adhan and adhan_path and os.path.isfile(adhan_path):
             _play_adhan(adhan_path)
         else:
-            send_notification(name, time_str)
+            send_notification(name, time_str, bypass_dnd=bypass_dnd)
         self.update_icon()
 
     def _check_update(self):

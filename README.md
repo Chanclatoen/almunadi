@@ -11,7 +11,7 @@ Display the next Islamic prayer time in your desktop's top bar / menu bar / syst
 
 ## Screenshots
 
-Platform screenshots are tracked under `docs/screenshots/`:
+Screenshots are not committed yet. Once captured from a real build, they will live under `docs/screenshots/` (see `docs/screenshots/README.md` for capture guidelines):
 
 - GNOME Shell extension: `docs/screenshots/gnome.png`
 - Linux tray app: `docs/screenshots/linux.png`
@@ -160,7 +160,7 @@ This creates a release with:
 
 The static website lives in `site/` and deploys to GitHub Pages on pushes to `main`.
 
-The hosted mosque finder uses a Cloudflare Worker in `worker/` for live Mawaqit search because the Mawaqit endpoint does not expose browser CORS headers. After deploying the Worker, copy `site/config.example.js` to `site/config.js` and set the Worker origin unless the Worker is mounted under the same site domain.
+The hosted mosque finder uses a Cloudflare Worker in `worker/` for live Mawaqit search because the Mawaqit endpoint does not expose browser CORS headers. After deploying the Worker, set the Worker origin (`apiBase`) in `site/config.js` — the committed config used by this project's deployment. `site/config.example.js` is a template for forks. Leave `apiBase` empty only when the Worker is mounted under the same site domain.
 
 ## Testing
 

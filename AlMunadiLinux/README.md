@@ -132,6 +132,21 @@ The app can play an audio file (WAV, MP3, OGG, FLAC, etc.) at each prayer time i
 
 Configure the audio file path in **Settings > Adhan > Browse**.
 
+## Desktop widget (Conky)
+
+For an ambient at-a-glance display on the desktop (next prayer, countdown, all 5 prayers, optional iqama + Hijri + Qibla), there is a Conky template in [`conky/`](conky/). It works on any desktop environment with a compositor (KDE, XFCE, Cinnamon, MATE, LXQt, Budgie) and reads the same `~/.config/AlMunadi/cache.json` that this tray app already writes -- no extra config needed.
+
+```bash
+sudo apt install conky-all
+mkdir -p ~/.config/AlMunadi/conky
+cp AlMunadiLinux/conky/almunadi.lua AlMunadiLinux/conky/almunadi-*.conkyrc ~/.config/AlMunadi/conky/
+conky -c ~/.config/AlMunadi/conky/almunadi-medium.conkyrc &
+```
+
+See [`conky/README.md`](conky/README.md) for the small / medium / large variants and customization options.
+
+> **GNOME users**: use the GNOME Shell extension at the repo root -- it already provides the same data as a panel widget.
+
 ## Desktop environment notes
 
 | Desktop | Tray support | Notes |
