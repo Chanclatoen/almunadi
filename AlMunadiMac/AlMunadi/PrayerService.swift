@@ -4,7 +4,7 @@ import UserNotifications
 import AVFoundation
 
 class PrayerService: ObservableObject {
-    static let appVersion = "1.0.8"
+    static let appVersion = "1.0.9"
     static let tagPrefix = "v"
     private static let releasesURL = "https://api.github.com/repos/Chanclatoen/almunadi/releases"
     static let repoReleasesPage = "https://github.com/Chanclatoen/almunadi/releases"

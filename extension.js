@@ -10,7 +10,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const _VERSION = '1.0.8';
+const _VERSION = '1.0.9';
 const _TAG_PREFIX = 'v';
 const _RELEASES_URL = 'https://api.github.com/repos/Chanclatoen/almunadi/releases';
 const _REPO_RELEASES_PAGE = 'https://github.com/Chanclatoen/almunadi/releases';
