@@ -1,11 +1,13 @@
 import {
     buildSearchUrl,
     canonicalMosqueUrl,
+    detectPlatform,
     escapeHtml,
     mapPrayerTimes,
     normalizeQuery,
     resolveIqama,
     resultMessageForError,
+    resultsStatusMessage,
     sanitizeMosque,
     scoreMosque,
     serviceBadges,
@@ -89,6 +91,18 @@ assertEqual(buildSearchUrl('https://w.example/', 'a b'), 'https://w.example/api/
 const partial = mapPrayerTimes({ times: ['05:00', '', '13:00'] });
 assertEqual(partial.length, 2, 'mapPrayerTimes drops empty times');
 assertEqual(partial[1].label, 'Dhuhr', 'mapPrayerTimes keeps label alignment');
+
+// resultsStatusMessage wording
+assertEqual(resultsStatusMessage(1, 'irvine'), '1 mosque found for "irvine"', 'resultsStatusMessage singular');
+assertEqual(resultsStatusMessage(12, 'Dordrecht'), '12 mosques found for "Dordrecht"', 'resultsStatusMessage plural');
+assert(resultsStatusMessage(0, 'xyz').includes('Try a city name'), 'resultsStatusMessage no results gives a hint');
+
+// detectPlatform (local-only download hint)
+assertEqual(detectPlatform('Mozilla/5.0 (Windows NT 10.0; Win64; x64)'), 'windows', 'detectPlatform windows');
+assertEqual(detectPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'), 'macos', 'detectPlatform macos');
+assertEqual(detectPlatform('Mozilla/5.0 (X11; Linux x86_64)'), 'linux', 'detectPlatform linux');
+assertEqual(detectPlatform('Mozilla/5.0 (Linux; Android 14; Pixel)'), null, 'detectPlatform ignores android');
+assertEqual(detectPlatform(''), null, 'detectPlatform empty UA');
 
 // escapeHtml neutralizes markup
 assertEqual(

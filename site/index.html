@@ -3,15 +3,43 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Al Munadi - Mawaqit Mosque Finder</title>
-    <meta name="description" content="Find your mosque on Mawaqit and use it in Al Munadi, the prayer-times app for your desktop.">
+    <title>Al Munadi — Desktop Prayer Times Powered by Mawaqit</title>
+    <meta name="description" content="Find your Mawaqit mosque and show the next prayer time in your GNOME top bar, Linux tray, macOS menu bar, or Windows system tray.">
+    <link rel="canonical" href="https://almunadi.net/">
+    <meta name="application-name" content="Al Munadi">
+    <meta name="apple-mobile-web-app-title" content="Al Munadi">
     <meta name="theme-color" content="#0f5d47" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)">
+
+    <meta property="og:title" content="Al Munadi — Desktop Prayer Times Powered by Mawaqit">
+    <meta property="og:description" content="Find your Mawaqit mosque and show the next prayer time in your GNOME top bar, Linux tray, macOS menu bar, or Windows system tray.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://almunadi.net/">
+    <meta property="og:site_name" content="Al Munadi">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Al Munadi — Desktop Prayer Times Powered by Mawaqit">
+    <meta name="twitter:description" content="Find your Mawaqit mosque and show the next prayer time in your GNOME top bar, Linux tray, macOS menu bar, or Windows system tray.">
+
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="preload" href="./fonts/bricolage-800.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="./fonts/hanken-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="./styles.css">
     <script src="./config.js"></script>
     <script type="module" src="./js/app.js"></script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Al Munadi",
+        "url": "https://almunadi.net/",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Windows, macOS, Linux",
+        "isAccessibleForFree": true,
+        "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+        "description": "Desktop prayer-time companion that shows the next Islamic prayer in the GNOME top bar, Linux tray, macOS menu bar, or Windows system tray, powered by public Mawaqit mosque data.",
+        "downloadUrl": "https://github.com/Chanclatoen/almunadi/releases"
+    }
+    </script>
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -20,46 +48,152 @@
         <a class="brand" href="./" aria-label="Al Munadi home">
             <span class="brand-mark" aria-hidden="true">
                 <svg viewBox="0 0 32 32" width="28" height="28" fill="none">
-                    <rect x="6" y="6" width="20" height="20" rx="2" transform="rotate(0 16 16)" stroke="currentColor" stroke-width="2"/>
+                    <rect x="6" y="6" width="20" height="20" rx="2" stroke="currentColor" stroke-width="2"/>
                     <rect x="6" y="6" width="20" height="20" rx="2" transform="rotate(45 16 16)" stroke="currentColor" stroke-width="2"/>
                 </svg>
             </span>
             <span class="brand-name">Al&nbsp;Munadi</span>
         </a>
-        <nav aria-label="Primary">
+        <button class="nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav">
+            <span class="visually-hidden">Menu</span>
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path class="nav-toggle-open" d="M4 7h16M4 12h16M4 17h16"/>
+                <path class="nav-toggle-close" d="M6 6l12 12M18 6L6 18"/>
+            </svg>
+        </button>
+        <nav id="site-nav" class="site-nav" data-nav aria-label="Primary">
+            <a href="#features">Features</a>
+            <a href="#find">Find mosque</a>
             <a href="#downloads">Downloads</a>
-            <a href="#setup">Setup</a>
-            <a data-repo-link href="#">GitHub</a>
+            <a href="#how">How it works</a>
+            <a href="#faq">FAQ</a>
+            <a data-repo-link href="#" target="_blank" rel="noreferrer">GitHub</a>
+            <a class="nav-cta" href="#find">Find your mosque</a>
         </nav>
     </header>
 
     <main id="main">
-        <section class="hero" aria-labelledby="finder-title">
+
+        <!-- ============ Hero ============ -->
+        <section class="hero" aria-labelledby="hero-title">
             <div class="hero-copy">
                 <p class="hero-arabic" aria-hidden="true">الـمُنادي</p>
-                <h1 id="finder-title">Find your mosque.</h1>
-                <p id="finder-desc">Search the public Mawaqit directory, copy your mosque link, and paste it into Al Munadi on your desktop.</p>
-
-                <form class="search" data-search-form role="search">
-                    <label for="mosque-search">Search mosques</label>
-                    <div class="search-row">
-                        <input id="mosque-search" data-search-input type="search" placeholder="Irvine, Dordrecht, Paris..." autocomplete="off" minlength="2" aria-describedby="finder-desc" enterkeyhint="search">
-                        <button type="submit">Search</button>
-                    </div>
-                    <div class="quick-links" aria-label="Download for your desktop">
-                        <span>Get the app:</span>
-                        <a data-releases-link href="#">Windows</a>
-                        <a data-releases-link href="#">macOS</a>
-                        <a data-releases-link href="#">Linux</a>
-                        <a data-releases-link href="#">GNOME</a>
-                    </div>
-                </form>
+                <h1 id="hero-title">Prayer times, always present on your desktop.</h1>
+                <p class="hero-lead">Al Munadi shows your mosque’s next prayer, a live countdown, and the full daily schedule in your GNOME top bar, Linux tray, macOS menu bar, or Windows system tray — powered by public Mawaqit mosque data.</p>
+                <div class="hero-actions">
+                    <a class="solid" href="#find">Find your mosque</a>
+                    <a class="ghost" href="#downloads">Download Al Munadi</a>
+                    <a class="hero-repo" data-repo-link href="#" target="_blank" rel="noreferrer">View on GitHub</a>
+                </div>
+                <ul class="hero-badges" aria-label="Highlights">
+                    <li>Open source</li>
+                    <li>No account needed</li>
+                    <li>Powered by Mawaqit</li>
+                    <li>Windows · macOS · Linux · GNOME</li>
+                    <li>5 languages</li>
+                    <li>Offline cache</li>
+                </ul>
             </div>
-            <div class="hero-aside" aria-hidden="true"></div>
+
+            <div class="hero-visual">
+                <div class="mockup" role="img" aria-label="Preview of Al Munadi: a desktop top bar showing “Dhuhr 13:41 in 02:18:44”, with a panel listing the daily prayers, Iqama times, and Jumuah for a mosque in Dordrecht, plus a prayer-time notification.">
+                    <div class="mockup-frame" aria-hidden="true">
+                        <div class="mockup-bar">
+                            <span class="mockup-bar-dim">Activities</span>
+                            <span class="mockup-indicator">
+                                <svg viewBox="0 0 32 32" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3">
+                                    <rect x="6" y="6" width="20" height="20" rx="2"/>
+                                    <rect x="6" y="6" width="20" height="20" rx="2" transform="rotate(45 16 16)"/>
+                                </svg>
+                                Dhuhr 13:41 · 02:18:44
+                            </span>
+                            <span class="mockup-bar-dim">11:22</span>
+                        </div>
+                        <div class="mockup-panel">
+                            <div class="mockup-panel-head">
+                                <strong>Masjid Arrahmaan</strong>
+                                <span>Dordrecht · 24 Dhul Hijjah 1447</span>
+                            </div>
+                            <ul class="mockup-times">
+                                <li><span>Fajr</span><em>03:54</em><i>Iqama 04:14</i></li>
+                                <li><span>Shuruq</span><em>05:19</em><i></i></li>
+                                <li class="is-next"><span>Dhuhr</span><em>13:41</em><i>Iqama 13:56</i><b>Next</b></li>
+                                <li><span>Asr</span><em>17:58</em><i>Iqama 18:08</i></li>
+                                <li><span>Maghrib</span><em>22:03</em><i>Iqama 22:08</i></li>
+                                <li><span>Isha</span><em>23:38</em><i>Iqama 23:53</i></li>
+                            </ul>
+                            <div class="mockup-jumua">Jumuah <strong>13:30</strong> — replaces Dhuhr on Friday</div>
+                        </div>
+                        <div class="mockup-toast">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+                            </svg>
+                            <span><strong>Dhuhr — 13:41</strong><br>Prayer time at Masjid Arrahmaan</span>
+                        </div>
+                    </div>
+                    <ul class="mockup-platforms" aria-hidden="true">
+                        <li class="is-active">GNOME</li>
+                        <li>Windows</li>
+                        <li>macOS</li>
+                        <li>Linux</li>
+                    </ul>
+                </div>
+                <p class="mockup-caption">Interface preview — the real indicator follows your desktop’s native look.</p>
+            </div>
         </section>
 
-        <section class="results-section" aria-labelledby="results-title">
-            <h2 id="results-title" class="visually-hidden">Search results</h2>
+        <!-- ============ Why ============ -->
+        <section id="why" class="band" data-reveal aria-labelledby="why-title">
+            <div class="band-head">
+                <h2 id="why-title">Your mosque’s times, not a generic calculation.</h2>
+                <p>Most prayer apps live on your phone or in a browser tab, and many rely on generic calculation methods that can differ from your local mosque’s schedule.</p>
+            </div>
+            <div class="why-grid">
+                <div class="why-col">
+                    <h3>The problem</h3>
+                    <ul class="why-list">
+                        <li>Prayer apps are mobile-first — your desktop is where you actually work.</li>
+                        <li>A browser tab with prayer times is easy to lose and forget.</li>
+                        <li>Generic calculation methods may not match your local mosque.</li>
+                        <li>Iqama and Jumuah times are set by the mosque, not by a formula.</li>
+                    </ul>
+                </div>
+                <div class="why-col">
+                    <h3>What Al Munadi does</h3>
+                    <ul class="why-list is-positive">
+                        <li>Uses your mosque’s public Mawaqit page, including Iqama and Jumuah.</li>
+                        <li>Puts the next prayer directly in your desktop bar, tray, or menu bar.</li>
+                        <li>Keeps working from cached data when you’re offline.</li>
+                        <li>Open source, no account, no setup beyond picking your mosque.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ Mosque finder ============ -->
+        <section id="find" class="finder" aria-labelledby="finder-title">
+            <div class="band-head">
+                <h2 id="finder-title">Find your mosque</h2>
+                <p id="finder-desc">Search public Mawaqit mosques and copy the link into Al Munadi.</p>
+            </div>
+
+            <form class="search" data-search-form role="search">
+                <label for="mosque-search">Search by mosque name or city</label>
+                <div class="search-row">
+                    <input id="mosque-search" data-search-input type="search" placeholder="Dordrecht, Rotterdam, Paris, Irvine…" autocomplete="off" minlength="2" aria-describedby="finder-desc" enterkeyhint="search">
+                    <button type="submit">Search</button>
+                </div>
+                <div class="chips" data-chips aria-label="Example searches">
+                    <span>Try:</span>
+                    <button type="button" data-chip>Dordrecht</button>
+                    <button type="button" data-chip>Rotterdam</button>
+                    <button type="button" data-chip>Paris</button>
+                    <button type="button" data-chip>London</button>
+                    <button type="button" data-chip>Irvine</button>
+                </div>
+            </form>
+
             <div class="status-row">
                 <p data-status aria-live="polite"></p>
                 <button type="button" class="ghost" data-retry hidden>Retry</button>
@@ -67,54 +201,208 @@
 
             <div class="empty-state" data-empty>
                 <div class="empty-figure" aria-hidden="true">
-                    <svg viewBox="0 0 120 120" width="120" height="120" fill="none">
-                        <rect x="26" y="26" width="68" height="68" rx="8" transform="rotate(0 60 60)" stroke="currentColor" stroke-width="2"/>
+                    <svg viewBox="0 0 120 120" width="110" height="110" fill="none">
+                        <rect x="26" y="26" width="68" height="68" rx="8" stroke="currentColor" stroke-width="2"/>
                         <rect x="26" y="26" width="68" height="68" rx="8" transform="rotate(45 60 60)" stroke="currentColor" stroke-width="2"/>
                         <circle cx="60" cy="60" r="14" stroke="currentColor" stroke-width="2"/>
                     </svg>
                 </div>
                 <div class="empty-copy">
                     <p class="empty-lead">Start typing to find a mosque.</p>
-                    <p>This finder searches public Mawaqit mosque data through the project proxy. It is not an official Mawaqit directory.</p>
+                    <p>The finder searches public Mawaqit mosque data through this project’s proxy. If your mosque isn’t listed, check whether it has a public page on Mawaqit. Al Munadi is an independent project, not an official Mawaqit directory.</p>
                 </div>
             </div>
 
             <div class="results-grid" data-results></div>
         </section>
 
-        <section id="downloads" class="band">
+        <!-- ============ Features ============ -->
+        <section id="features" class="features" data-reveal aria-labelledby="features-title">
             <div class="band-head">
-                <h2>Install Al Munadi</h2>
-                <p>Pick a build for your desktop, then drop in the mosque link you copied above.</p>
+                <h2 id="features-title">Built around your local mosque.</h2>
+                <p>Instead of generic calculation settings, Al Munadi uses the public Mawaqit page of your mosque — including Iqama and Jumuah times when available.</p>
+            </div>
+            <ul class="feature-grid">
+                <li><h3>Next prayer always visible</h3><p>The upcoming prayer sits directly in your desktop bar, tray, or menu bar.</p></li>
+                <li><h3>Live countdown</h3><p>See how much time remains until the next prayer — or switch to time elapsed since the last one.</p></li>
+                <li><h3>Mosque-based timings</h3><p>Public Mawaqit data from your own local mosque, not a generic formula.</p></li>
+                <li><h3>Iqama support</h3><p>Iqama times are displayed when your mosque provides them.</p></li>
+                <li><h3>Jumuah support</h3><p>Friday prayer can replace Dhuhr and has its own reminder setting.</p></li>
+                <li><h3>Full daily schedule</h3><p>Fajr, Shuruq, Dhuhr, Asr, Maghrib, and Isha at a glance.</p></li>
+                <li><h3>Hijri date</h3><p>The Hijri date is shown when mosque metadata provides it.</p></li>
+                <li><h3>Qibla direction</h3><p>Qibla is displayed when mosque metadata supports it.</p></li>
+                <li><h3>Adhan audio</h3><p>Optionally play your own Adhan audio file at prayer time.</p></li>
+                <li><h3>Desktop notifications</h3><p>A reminder fires right when prayer time arrives.</p></li>
+                <li><h3>Multi-mosque</h3><p>Save several mosques and switch between them instantly.</p></li>
+                <li><h3>Offline cache</h3><p>The last fetched times keep working when your network is down.</p></li>
+                <li><h3>Multi-language</h3><p>English, Dutch, Arabic, French, and Turkish.</p></li>
+                <li><h3>Open source</h3><p>Transparent GPL-3.0 project, hosted on GitHub.</p></li>
+            </ul>
+        </section>
+
+        <!-- ============ Downloads ============ -->
+        <section id="downloads" class="downloads" data-reveal aria-labelledby="downloads-title">
+            <div class="band-head">
+                <h2 id="downloads-title">Install it on your desktop.</h2>
+                <p>Every build is published on GitHub releases. Pick yours, then drop in the mosque link from the finder above.</p>
             </div>
             <div class="download-grid">
-                <a data-releases-link href="#"><strong>Windows</strong><span>System tray app</span></a>
-                <a data-releases-link href="#"><strong>macOS</strong><span>Menu bar app</span></a>
-                <a data-releases-link href="#"><strong>Linux</strong><span>Tray app</span></a>
-                <a data-releases-link href="#"><strong>GNOME</strong><span>Shell extension</span></a>
+                <article class="download-card" data-platform="windows">
+                    <span class="platform-flag" hidden>For your system</span>
+                    <h3>Windows</h3>
+                    <p>System tray app. Download <code>AlMunadi.exe</code> from the latest release and run it — no Python or installer needed.</p>
+                    <div class="download-actions">
+                        <a class="solid" data-releases-link href="#" target="_blank" rel="noreferrer">Get for Windows</a>
+                        <a class="subtle" data-repo-path="blob/main/AlMunadiWindows/README.md" href="#" target="_blank" rel="noreferrer">Read instructions</a>
+                    </div>
+                </article>
+                <article class="download-card" data-platform="macos">
+                    <span class="platform-flag" hidden>For your system</span>
+                    <h3>macOS</h3>
+                    <p>Menu bar app. Download the signed and notarized zip from the latest release, unzip, and drag to Applications.</p>
+                    <div class="download-actions">
+                        <a class="solid" data-releases-link href="#" target="_blank" rel="noreferrer">Get for macOS</a>
+                        <a class="subtle" data-repo-path="blob/main/AlMunadiMac/README.md" href="#" target="_blank" rel="noreferrer">Read instructions</a>
+                    </div>
+                </article>
+                <article class="download-card" data-platform="linux">
+                    <span class="platform-flag" hidden>For your system</span>
+                    <h3>Linux tray</h3>
+                    <p>Tray indicator for KDE, XFCE, Cinnamon, MATE, and other desktops. A Linux binary is available from the latest release.</p>
+                    <div class="download-actions">
+                        <a class="solid" data-releases-link href="#" target="_blank" rel="noreferrer">Get for Linux</a>
+                        <a class="subtle" data-repo-path="blob/main/AlMunadiLinux/README.md" href="#" target="_blank" rel="noreferrer">Read instructions</a>
+                    </div>
+                </article>
+                <article class="download-card" data-platform="gnome">
+                    <span class="platform-flag" hidden>For your system</span>
+                    <h3>GNOME Shell</h3>
+                    <p>Native top bar extension. Install from the release zip or from source, then enable it with GNOME Extensions.</p>
+                    <div class="download-actions">
+                        <a class="solid" data-releases-link href="#" target="_blank" rel="noreferrer">Get the extension</a>
+                        <a class="subtle" data-repo-path="#gnome-manual-installation" href="#" target="_blank" rel="noreferrer">Read instructions</a>
+                    </div>
+                </article>
             </div>
         </section>
 
-        <section id="setup" class="band setup">
+        <!-- ============ How it works ============ -->
+        <section id="how" class="band setup" data-reveal aria-labelledby="how-title">
             <div class="band-head">
-                <h2>Use a mosque link in the app</h2>
-                <p>Three steps from finder to your top bar.</p>
+                <h2 id="how-title">From mosque search to desktop reminder in minutes.</h2>
             </div>
             <ol class="steps">
-                <li><span class="step-n" aria-hidden="true">1</span>Find your mosque above and copy its Mawaqit link.</li>
-                <li><span class="step-n" aria-hidden="true">2</span>Open Al Munadi settings on your desktop.</li>
-                <li><span class="step-n" aria-hidden="true">3</span>Paste the link, or search for the same mosque in-app.</li>
+                <li><span class="step-n" aria-hidden="true">1</span><div><strong>Download Al Munadi</strong> for your platform from GitHub releases.</div></li>
+                <li><span class="step-n" aria-hidden="true">2</span><div><strong>Search for your mosque</strong> in the app — or here on the website.</div></li>
+                <li><span class="step-n" aria-hidden="true">3</span><div><strong>Select or paste</strong> your mosque’s Mawaqit link in the app settings.</div></li>
+                <li><span class="step-n" aria-hidden="true">4</span><div><strong>Done.</strong> Your next prayer appears in your desktop bar.</div></li>
             </ol>
+            <p class="setup-note">If your mosque is not listed, check whether it has a public page on <a href="https://mawaqit.net" target="_blank" rel="noreferrer">Mawaqit</a>.</p>
+        </section>
+
+        <!-- ============ Trust / privacy ============ -->
+        <section id="privacy" class="band trust" data-reveal aria-labelledby="privacy-title">
+            <div class="band-head">
+                <h2 id="privacy-title">Simple, open, and privacy-conscious.</h2>
+                <p>Al Munadi does not need an account, and this website does not run analytics or trackers.</p>
+            </div>
+            <ul class="trust-grid">
+                <li><strong>No account required</strong><span>Install, pick a mosque, done. There is nothing to sign up for.</span></li>
+                <li><strong>No tracking</strong><span>No analytics scripts, no ads, no user profiles — on the apps or this website.</span></li>
+                <li><strong>Open source</strong><span>The apps, this website, and the search Worker are all GPL-3.0 on GitHub.</span></li>
+                <li><strong>Public mosque data only</strong><span>Everything comes from public Mawaqit mosque pages. No private mosque data is shown.</span></li>
+                <li><strong>A small search proxy</strong><span>Browser search goes through this project’s Worker only because Mawaqit search does not expose browser CORS headers.</span></li>
+                <li><strong>Filtered responses</strong><span>The Worker returns only the public fields the finder needs — nothing more.</span></li>
+            </ul>
+        </section>
+
+        <!-- ============ FAQ ============ -->
+        <section id="faq" class="faq" data-reveal aria-labelledby="faq-title">
+            <div class="band-head">
+                <h2 id="faq-title">Frequently asked questions</h2>
+            </div>
+            <div class="faq-list">
+                <details>
+                    <summary>What is Al Munadi?</summary>
+                    <p>Al Munadi (المُنادي, “the caller”) is a desktop prayer-time companion. It shows the next prayer, a countdown, and your mosque’s full daily schedule in your desktop bar, tray, or menu bar, using public Mawaqit mosque pages.</p>
+                </details>
+                <details>
+                    <summary>Is Al Munadi an official Mawaqit app?</summary>
+                    <p>No. Al Munadi is an independent open-source project powered by public Mawaqit data. It is not affiliated with or endorsed by Mawaqit.</p>
+                </details>
+                <details>
+                    <summary>Which platforms are supported?</summary>
+                    <p>Windows (system tray app), macOS (menu bar app), Linux trays such as KDE, XFCE, Cinnamon, and MATE, and GNOME Shell via a native top bar extension.</p>
+                </details>
+                <details>
+                    <summary>Does it work with my mosque?</summary>
+                    <p>It works with any mosque that has a public page on mawaqit.net. Use the finder above to check — if your mosque appears, you’re set.</p>
+                </details>
+                <details>
+                    <summary>Why does it use Mawaqit?</summary>
+                    <p>Mawaqit pages are maintained by the mosques themselves, so the times — including Iqama and Jumuah — match what your mosque actually follows, rather than a generic calculation method.</p>
+                </details>
+                <details>
+                    <summary>Does it work offline?</summary>
+                    <p>The offline cache keeps the last fetched prayer times available when your network is down. Fresh updates still require an internet connection.</p>
+                </details>
+                <details>
+                    <summary>Does it support Iqama times?</summary>
+                    <p>Yes — Iqama times are shown whenever your mosque provides them on its Mawaqit page.</p>
+                </details>
+                <details>
+                    <summary>Does it support Jumuah?</summary>
+                    <p>Yes. On Fridays, Jumuah can replace Dhuhr, and it has its own reminder setting, depending on what your mosque publishes.</p>
+                </details>
+                <details>
+                    <summary>Can it play the Adhan?</summary>
+                    <p>Yes — you can point Al Munadi to your own Adhan audio file, and it plays at each prayer time.</p>
+                </details>
+                <details>
+                    <summary>Can I save multiple mosques?</summary>
+                    <p>Yes. You can save several mosques and switch between them instantly.</p>
+                </details>
+                <details>
+                    <summary>Is it free?</summary>
+                    <p>Yes, completely free. There are no paid tiers, accounts, or ads.</p>
+                </details>
+                <details>
+                    <summary>Is it open source?</summary>
+                    <p>Yes — the whole project is licensed under GPL-3.0 and developed in the open on GitHub.</p>
+                </details>
+                <details>
+                    <summary>Why does the website use an API proxy?</summary>
+                    <p>The Mawaqit search endpoint does not send browser CORS headers, so this site can’t call it directly. A small Cloudflare Worker proxies the search, with caching, rate limiting, and response filtering, and returns only the public fields the finder needs.</p>
+                </details>
+            </div>
+        </section>
+
+        <!-- ============ Open source / developers ============ -->
+        <section id="opensource" class="band devs" data-reveal aria-labelledby="devs-title">
+            <div class="band-head">
+                <h2 id="devs-title">Built for the desktop, in the open.</h2>
+                <p>Native integrations on every platform — a GNOME Shell extension, a Swift menu bar app, and Python tray apps — plus a static website and a small Cloudflare Worker for search. Tests included.</p>
+            </div>
+            <div class="dev-actions">
+                <a class="solid" data-repo-link href="#" target="_blank" rel="noreferrer">View source on GitHub</a>
+                <a class="ghost" data-releases-link href="#" target="_blank" rel="noreferrer">Latest releases</a>
+            </div>
+            <p class="dev-note">Contributions, issues, and translations are welcome.</p>
         </section>
     </main>
 
     <footer>
-        <span class="footer-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="18" height="18" fill="none"><rect x="7" y="7" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" stroke="currentColor" stroke-width="2.4"/></svg></span>Al Munadi</span>
-        <span>Powered by public Mawaqit mosque pages.</span>
-        <span class="footer-links">
+        <div class="footer-main">
+            <span class="footer-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="18" height="18" fill="none"><rect x="7" y="7" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="7" width="18" height="18" rx="2" transform="rotate(45 16 16)" stroke="currentColor" stroke-width="2.4"/></svg></span>Al Munadi</span>
+            <span class="footer-desc">A quiet prayer-time companion for your desktop.</span>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a data-repo-link href="#" target="_blank" rel="noreferrer">GitHub</a>
+            <a data-releases-link href="#" target="_blank" rel="noreferrer">Releases</a>
+            <a data-repo-path="blob/main/LICENSE" href="#" target="_blank" rel="noreferrer">License</a>
             <a href="https://mawaqit.net" target="_blank" rel="noreferrer">Mawaqit</a>
-            <a data-repo-link href="#">Source</a>
-        </span>
+        </nav>
+        <p class="footer-disclaimer">Independent open-source project powered by public Mawaqit mosque data.</p>
     </footer>
 </body>
 </html>

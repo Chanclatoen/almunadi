@@ -112,6 +112,22 @@ export function resultMessageForError(error) {
     return 'Search is unavailable. Check the Worker URL in site/config.js or try again later.';
 }
 
+export function resultsStatusMessage(count, query) {
+    if (!count) return `No mosques found for "${query}". Try a city name instead of the mosque name, and check the spelling.`;
+    return `${count} mosque${count === 1 ? '' : 's'} found for "${query}"`;
+}
+
+// Local-only platform hint used to highlight the matching download card.
+// Nothing is sent anywhere; this only reads the user agent string.
+export function detectPlatform(userAgent) {
+    const ua = String(userAgent || '').toLowerCase();
+    if (ua.includes('windows')) return 'windows';
+    if (ua.includes('mac os') || ua.includes('macintosh')) return 'macos';
+    if (ua.includes('android')) return null;
+    if (ua.includes('linux') || ua.includes('x11')) return 'linux';
+    return null;
+}
+
 export function escapeHtml(value) {
     return String(value)
         .replace(/&/g, '&amp;')
