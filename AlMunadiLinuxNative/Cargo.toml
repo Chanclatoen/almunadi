@@ -1,0 +1,10 @@
+[package]
+name = "almunadi-core"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+description = "Behavior-core spike for the native Al Munadi Linux tray app (see shared/migration-plan.md)"
+publish = false
+
+[dev-dependencies]
+serde_json = "1"

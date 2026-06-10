@@ -66,6 +66,10 @@ a tray-compatibility spike on KDE, XFCE, Cinnamon, and MATE.**
 
 ### Linux plan
 
+0. **Done:** `AlMunadiLinuxNative/` — a dependency-free Rust behavior core
+   (countdown/tray/iqama/offsets/Jumuah/version/slug) whose `cargo test`
+   asserts the same `shared/fixtures/behavior-fixtures.json` cases as the
+   Python and GNOME suites. Proves the fixtures are language-portable.
 1. Spike: minimal ksni tray + libadwaita window, test on KDE/XFCE/Cinnamon/MATE.
 2. Port core behavior against `shared/fixtures/`; reuse
    `~/.config/AlMunadi/{settings,cache}.json` unchanged.

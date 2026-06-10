@@ -42,8 +42,12 @@
       "launch_at_login"
     ]
   },
+  "keys_extra": {
+    "states_2": ["dnd_platform_note", "invalid_mawaqit_url"],
+    "actions_2": ["test_notification", "open_releases"],
+    "sections": ["display", "app", "app_version"]
+  },
   "todo": [
-    "retry is registered but not yet wired into the Python tray apps (search error currently asks the user to search again).",
-    "GNOME translations/*.json and macOS Translations.swift do not yet include the first-run/test-adhan/reset-offsets keys added in Python core; add them when those UIs adopt the new flows."
+    "GNOME translations/*.json and macOS Translations.swift do not yet include the first-run/test-adhan/reset-offsets/test-notification keys added in Python core; add them when those UIs adopt the new flows."
   ]
 }

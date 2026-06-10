@@ -136,5 +136,5 @@ toolchain to verify, so they ship separately):
 - **GNOME (GJS):** first-run menu item ("Find your mosque") when no mosque is
   configured; adopt the new translation keys in `translations/*.json`;
   optional next-prayer header card in the popup menu.
-- **Windows/Linux (Python):** a dedicated "Retry" action in the popup error
-  banner (currently Refresh serves this role).
+- **Linux native:** the Rust behavior core exists (`AlMunadiLinuxNative/`,
+  fixture-verified); next is the StatusNotifier tray spike on real desktops.

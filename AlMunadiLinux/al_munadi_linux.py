@@ -298,7 +298,7 @@ class PrayerTimesWindow:
         self.win.configure(bg=BG_COLOR)
         self.win.resizable(False, False)
         self.win.attributes("-topmost", True)
-        self._center_window(340, 480)
+        self._center_window(340, 565)
         self.win.protocol("WM_DELETE_WINDOW", self._close)
 
         self._build_ui()
@@ -369,7 +369,13 @@ class PrayerTimesWindow:
         iqama_times = self.app._resolved_iqama()
 
         if display_times:
-            idx, _ = get_next_prayer(display_times)
+            idx, next_dt = get_next_prayer(display_times)
+            self._build_next_prayer_card(
+                display_names[idx],
+                display_times[idx],
+                iqama_times[idx] if idx < len(iqama_times) else None,
+                next_dt,
+            )
 
             for i, name in enumerate(display_names):
                 t_str = display_times[i] if i < len(display_times) else "--:--"
@@ -405,15 +411,23 @@ class PrayerTimesWindow:
             msg = self.app.last_error
             if self.app.is_cached:
                 msg = f"{t('cached_data')}. {msg}"
+            err_row = tk.Frame(self.win, bg=BG_COLOR)
+            err_row.pack(fill="x", padx=pad, pady=2)
             tk.Label(
-                self.win,
+                err_row,
                 text=msg,
                 font=(FONT_FAMILY, 9),
                 fg=ERROR_TEXT,
                 bg=BG_COLOR,
                 anchor="w",
-                wraplength=300,
-            ).pack(fill="x", padx=pad, pady=2)
+                wraplength=250,
+            ).pack(side="left", fill="x", expand=True)
+            retry_btn = tk.Label(
+                err_row, text=t("retry"), font=(FONT_FAMILY, 9, "bold"),
+                fg=ERROR_TEXT, bg=BG_COLOR, cursor="hand2",
+            )
+            retry_btn.pack(side="right", padx=(8, 0))
+            retry_btn.bind("<Button-1>", lambda e: self._on_refresh())
 
         # Bottom buttons
         spacer = tk.Frame(self.win, bg=BG_COLOR)
@@ -488,6 +502,46 @@ class PrayerTimesWindow:
             fg=fg,
             bg=bg,
         ).pack(anchor="e")
+
+    def _build_next_prayer_card(self, name, time_str, iqama, next_dt):
+        """Prominent card for the upcoming prayer: name, time, countdown, iqama."""
+        import tkinter as tk
+
+        display_name = _translate_prayer(name)
+        countdown = format_countdown(next_dt, self.app.settings)
+
+        outer = tk.Frame(self.win, bg=ACCENT)
+        outer.pack(fill="x", padx=16, pady=(0, 10))
+        card = tk.Frame(outer, bg=HIGHLIGHT_BG, padx=14, pady=10)
+        card.pack(fill="x", padx=(4, 0))  # emerald left accent strip
+
+        tk.Label(
+            card, text=t("next_prayer").upper(), font=(FONT_FAMILY, 8, "bold"),
+            fg=TEXT_SECONDARY, bg=HIGHLIGHT_BG, anchor="w",
+        ).pack(anchor="w")
+
+        row = tk.Frame(card, bg=HIGHLIGHT_BG)
+        row.pack(fill="x")
+        tk.Label(
+            row, text=display_name, font=(FONT_FAMILY, 16, "bold"),
+            fg=TEXT_PRIMARY, bg=HIGHLIGHT_BG,
+        ).pack(side="left")
+        tk.Label(
+            row, text=time_str, font=(FONT_FAMILY, 16, "bold"),
+            fg=ACCENT, bg=HIGHLIGHT_BG,
+        ).pack(side="right")
+
+        sub = tk.Frame(card, bg=HIGHLIGHT_BG)
+        sub.pack(fill="x")
+        tk.Label(
+            sub, text=countdown, font=(FONT_FAMILY, 10, "bold"),
+            fg=ACCENT, bg=HIGHLIGHT_BG,
+        ).pack(side="left")
+        if iqama:
+            tk.Label(
+                sub, text=f"{t('iqama')} {iqama}", font=(FONT_FAMILY, 9),
+                fg=TEXT_SECONDARY, bg=HIGHLIGHT_BG,
+            ).pack(side="right")
 
     def _build_first_run_state(self):
         """Friendly empty state shown before any mosque is configured."""
@@ -664,38 +718,10 @@ class SettingsWindow:
 
         inner_pad = pad
 
-        # --- Language selector ---
-        ttk.Label(main, text=t("language"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(inner_pad, 4))
-
-        lang_frame = ttk.Frame(main, style="Dark.TFrame")
-        lang_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
-
-        self.lang_var = tk.StringVar(value=app.settings.get("language", "en"))
-        lang_combo = ttk.Combobox(
-            lang_frame,
-            textvariable=self.lang_var,
-            values=list(LANGUAGE_LABELS.keys()),
-            state="readonly",
-            style="Dark.TCombobox",
-            width=10,
-        )
-        lang_combo.pack(side="left")
-
-        # Show the human-readable label next to the dropdown
-        self._lang_label_var = tk.StringVar(value=LANGUAGE_LABELS.get(self.lang_var.get(), ""))
-        lang_label = ttk.Label(lang_frame, textvariable=self._lang_label_var, style="Dim.TLabel")
-        lang_label.pack(side="left", padx=(8, 0))
-
-        def _on_lang_change(event):
-            self._lang_label_var.set(LANGUAGE_LABELS.get(self.lang_var.get(), ""))
-
-        lang_combo.bind("<<ComboboxSelected>>", _on_lang_change)
-
-        # Divider
-        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(0, 12))
-
-        # --- Search section ---
-        ttk.Label(main, text=t("find_mosque"), style="Header.TLabel").pack(anchor="w", padx=inner_pad)
+        # =================================================================
+        # 1. Mosque — search, paste URL, connected mosque, saved mosques
+        # =================================================================
+        ttk.Label(main, text=t("find_mosque"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(inner_pad, 0))
         ttk.Label(main, text=t("search_hint"), style="Dim.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 8))
 
         search_frame = ttk.Frame(main, style="Dark.TFrame")
@@ -720,15 +746,11 @@ class SettingsWindow:
         self.results_tree.bind("<Double-1>", self._on_result_select)
         self.search_results = []
 
-        # Divider
-        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(0, 12))
-
-        # --- URL section ---
-        ttk.Label(main, text=t("paste_url"), style="Header.TLabel").pack(anchor="w", padx=inner_pad)
+        ttk.Label(main, text=t("paste_url"), style="Dark.TLabel").pack(anchor="w", padx=inner_pad)
         ttk.Label(main, text=t("paste_url_hint"), style="Dim.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 8))
 
         url_frame = ttk.Frame(main, style="Dark.TFrame")
-        url_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
+        url_frame.pack(fill="x", padx=inner_pad, pady=(0, 4))
 
         self.url_var = tk.StringVar(value=app.settings.get("mosque_url", ""))
         self.url_entry = tk.Entry(
@@ -741,13 +763,99 @@ class SettingsWindow:
 
         ttk.Button(url_frame, text=t("save"), style="Accent.TButton", command=self._save_url).pack(side="right", padx=(8, 0))
 
-        # --- Connected mosque ---
-        if app.mosque_name:
-            tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(0, 12))
-            ttk.Label(main, text=f"{t('connected_mosque')}: {app.mosque_name}", style="Dim.TLabel").pack(anchor="w", padx=inner_pad)
+        self._url_status_var = tk.StringVar(value="")
+        ttk.Label(main, textvariable=self._url_status_var, style="Dim.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 6))
 
-        # --- Notifications toggle ---
+        if app.mosque_name:
+            ttk.Label(main, text=f"{t('connected_mosque')}: {app.mosque_name}", style="Dim.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 8))
+
+        ttk.Label(main, text=t("saved_mosques"), style="Dark.TLabel").pack(anchor="w", padx=inner_pad)
+        self.mosque_tree = ttk.Treeview(
+            main, columns=("url",), show="headings", height=4, selectmode="browse",
+        )
+        self.mosque_tree.heading("url", text="URL")
+        self.mosque_tree.column("url", width=460)
+        self.mosque_tree.pack(fill="x", padx=inner_pad, pady=(4, 4))
+        self.mosque_tree.bind("<Double-1>", self._on_mosque_double_click)
+
+        mosque_btn_frame = ttk.Frame(main, style="Dark.TFrame")
+        mosque_btn_frame.pack(fill="x", padx=inner_pad, pady=(0, 4))
+
+        ttk.Button(mosque_btn_frame, text=t("add_mosque"), style="Dark.TButton", command=self._add_current_mosque).pack(side="left")
+        ttk.Button(mosque_btn_frame, text=t("switch_mosque"), style="Accent.TButton", command=self._switch_mosque).pack(side="left", padx=(8, 0))
+        ttk.Button(mosque_btn_frame, text=t("remove_mosque"), style="Dark.TButton", command=self._remove_mosque).pack(side="left", padx=(8, 0))
+
+        self._populate_mosque_tree()
+
+        # =================================================================
+        # 2. Display — language, display mode, countdown format
+        # =================================================================
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
+        ttk.Label(main, text=t("display"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
+
+        lang_frame = ttk.Frame(main, style="Dark.TFrame")
+        lang_frame.pack(fill="x", padx=inner_pad, pady=(0, 6))
+        ttk.Label(lang_frame, text=t("language"), style="Dark.TLabel", width=20).pack(side="left")
+        self.lang_var = tk.StringVar(value=app.settings.get("language", "en"))
+        lang_combo = ttk.Combobox(
+            lang_frame,
+            textvariable=self.lang_var,
+            values=list(LANGUAGE_LABELS.keys()),
+            state="readonly",
+            style="Dark.TCombobox",
+            width=10,
+        )
+        lang_combo.pack(side="left")
+
+        self._lang_label_var = tk.StringVar(value=LANGUAGE_LABELS.get(self.lang_var.get(), ""))
+        ttk.Label(lang_frame, textvariable=self._lang_label_var, style="Dim.TLabel").pack(side="left", padx=(8, 0))
+
+        def _on_lang_change(event):
+            self._lang_label_var.set(LANGUAGE_LABELS.get(self.lang_var.get(), ""))
+
+        lang_combo.bind("<<ComboboxSelected>>", _on_lang_change)
+
+        dm_frame = ttk.Frame(main, style="Dark.TFrame")
+        dm_frame.pack(fill="x", padx=inner_pad, pady=(0, 6))
+        ttk.Label(dm_frame, text=t("display_mode"), style="Dark.TLabel", width=20).pack(side="left")
+        self.display_mode_var = tk.StringVar(value=app.settings.get("display_mode", "countdown"))
+        ttk.Combobox(
+            dm_frame,
+            textvariable=self.display_mode_var,
+            values=["countdown", "since", "time", "name", "compact", "icon"],
+            state="readonly",
+            style="Dark.TCombobox",
+            width=12,
+        ).pack(side="left")
+
+        cd_frame = ttk.Frame(main, style="Dark.TFrame")
+        cd_frame.pack(fill="x", padx=inner_pad, pady=(0, 6))
+        ttk.Label(cd_frame, text=t("countdown_format"), style="Dark.TLabel", width=20).pack(side="left")
+        self.countdown_var = tk.StringVar(value=app.settings.get("countdown_format", "compact"))
+        cd_combo = ttk.Combobox(
+            cd_frame,
+            textvariable=self.countdown_var,
+            values=["compact", "full"],
+            state="readonly",
+            style="Dark.TCombobox",
+            width=12,
+        )
+        cd_combo.pack(side="left")
+
+        self._cd_label_var = tk.StringVar(value=self._countdown_label(self.countdown_var.get()))
+        ttk.Label(cd_frame, textvariable=self._cd_label_var, style="Dim.TLabel").pack(side="left", padx=(8, 0))
+
+        def _on_cd_change(event):
+            self._cd_label_var.set(self._countdown_label(self.countdown_var.get()))
+
+        cd_combo.bind("<<ComboboxSelected>>", _on_cd_change)
+
+        # =================================================================
+        # 3. Notifications — global toggle, DND bypass, per-prayer settings
+        # =================================================================
+        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
+        ttk.Label(main, text=t("notifications"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
+
         self.notif_var = tk.BooleanVar(value=app.settings.get("notifications_enabled", True))
         notif_cb = tk.Checkbutton(
             main,
@@ -780,8 +888,55 @@ class SettingsWindow:
             highlightthickness=0,
         )
         dnd_cb.pack(anchor="w", padx=inner_pad)
+        ttk.Label(main, text=t("dnd_platform_note"), style="Dim.TLabel", wraplength=470, justify="left").pack(anchor="w", padx=inner_pad, pady=(0, 4))
 
-        # --- Adhan section ---
+        ttk.Button(main, text=t("test_notification"), style="Dark.TButton", command=self._test_notification).pack(anchor="w", padx=inner_pad, pady=(2, 8))
+
+        ttk.Label(main, text=t("per_prayer_notifications"), style="Dark.TLabel").pack(anchor="w", padx=inner_pad, pady=(4, 2))
+
+        self._prayer_notif_vars = {}
+        notif_settings = app.settings.get(
+            "prayer_notification_settings", default_prayer_notification_settings()
+        )
+        for key in NOTIFICATION_PRAYER_KEYS:
+            row = ttk.Frame(main, style="Dark.TFrame")
+            row.pack(fill="x", padx=inner_pad, pady=2)
+            ttk.Label(row, text=key, style="Dark.TLabel", width=8).pack(side="left")
+
+            enabled_var = tk.BooleanVar(value=notif_settings.get(key, {}).get("enabled", True))
+            ttk.Checkbutton(row, variable=enabled_var, style="Dark.TCheckbutton").pack(side="left")
+
+            ttk.Label(row, text=t("prayer_reminder"), style="Dim.TLabel").pack(side="left", padx=(8, 4))
+            reminder_var = tk.IntVar(value=notif_settings.get(key, {}).get("reminder_minutes", 0))
+            tk.Spinbox(
+                row, from_=0, to=120, textvariable=reminder_var, width=4,
+                bg=CARD_COLOR, fg=TEXT_PRIMARY, buttonbackground=CARD_COLOR,
+            ).pack(side="left")
+
+            adhan_val = notif_settings.get(key, {}).get("adhan_enabled")
+            adhan_var = tk.StringVar(value="global" if adhan_val is None else ("on" if adhan_val else "off"))
+            ttk.Combobox(
+                row, textvariable=adhan_var, values=["global", "on", "off"],
+                state="readonly", style="Dark.TCombobox", width=8,
+            ).pack(side="left", padx=(8, 0))
+
+            dnd_val = notif_settings.get(key, {}).get("dnd_bypass")
+            dnd_var = tk.StringVar(value="global" if dnd_val is None else ("on" if dnd_val else "off"))
+            ttk.Combobox(
+                row, textvariable=dnd_var, values=["global", "on", "off"],
+                state="readonly", style="Dark.TCombobox", width=8,
+            ).pack(side="left", padx=(8, 0))
+
+            self._prayer_notif_vars[key] = {
+                "enabled": enabled_var,
+                "reminder": reminder_var,
+                "adhan": adhan_var,
+                "dnd_bypass": dnd_var,
+            }
+
+        # =================================================================
+        # 4. Adhan
+        # =================================================================
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
         ttk.Label(main, text=t("adhan"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
 
@@ -826,96 +981,9 @@ class SettingsWindow:
         self._adhan_status_var = tk.StringVar(value="")
         ttk.Label(adhan_btn_frame, textvariable=self._adhan_status_var, style="Dim.TLabel").pack(side="left", padx=(10, 0))
 
-        # --- Display mode ---
-        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
-        ttk.Label(main, text=t("display_mode"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
-
-        dm_frame = ttk.Frame(main, style="Dark.TFrame")
-        dm_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
-
-        self.display_mode_var = tk.StringVar(value=app.settings.get("display_mode", "countdown"))
-        dm_combo = ttk.Combobox(
-            dm_frame,
-            textvariable=self.display_mode_var,
-            values=["countdown", "since", "time", "name", "compact", "icon"],
-            state="readonly",
-            style="Dark.TCombobox",
-            width=12,
-        )
-        dm_combo.pack(side="left")
-
-        # --- Countdown format ---
-        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
-        ttk.Label(main, text=t("countdown_format"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
-
-        cd_frame = ttk.Frame(main, style="Dark.TFrame")
-        cd_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
-
-        self.countdown_var = tk.StringVar(value=app.settings.get("countdown_format", "compact"))
-        cd_combo = ttk.Combobox(
-            cd_frame,
-            textvariable=self.countdown_var,
-            values=["compact", "full"],
-            state="readonly",
-            style="Dark.TCombobox",
-            width=12,
-        )
-        cd_combo.pack(side="left")
-
-        self._cd_label_var = tk.StringVar(value=self._countdown_label(self.countdown_var.get()))
-        cd_label = ttk.Label(cd_frame, textvariable=self._cd_label_var, style="Dim.TLabel")
-        cd_label.pack(side="left", padx=(8, 0))
-
-        def _on_cd_change(event):
-            self._cd_label_var.set(self._countdown_label(self.countdown_var.get()))
-
-        cd_combo.bind("<<ComboboxSelected>>", _on_cd_change)
-
-        # --- Per-prayer notifications ---
-        tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
-        ttk.Label(main, text=t("per_prayer_notifications"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
-
-        self._prayer_notif_vars = {}
-        notif_settings = app.settings.get(
-            "prayer_notification_settings", default_prayer_notification_settings()
-        )
-        for key in NOTIFICATION_PRAYER_KEYS:
-            row = ttk.Frame(main, style="Dark.TFrame")
-            row.pack(fill="x", padx=inner_pad, pady=2)
-            ttk.Label(row, text=key, style="Dark.TLabel", width=8).pack(side="left")
-
-            enabled_var = tk.BooleanVar(value=notif_settings.get(key, {}).get("enabled", True))
-            ttk.Checkbutton(row, variable=enabled_var, style="Dark.TCheckbutton").pack(side="left")
-
-            ttk.Label(row, text=t("prayer_reminder"), style="Dim.TLabel").pack(side="left", padx=(8, 4))
-            reminder_var = tk.IntVar(value=notif_settings.get(key, {}).get("reminder_minutes", 0))
-            tk.Spinbox(
-                row, from_=0, to=120, textvariable=reminder_var, width=4,
-                bg=CARD_COLOR, fg=TEXT_PRIMARY, buttonbackground=CARD_COLOR,
-            ).pack(side="left")
-
-            adhan_val = notif_settings.get(key, {}).get("adhan_enabled")
-            adhan_var = tk.StringVar(value="global" if adhan_val is None else ("on" if adhan_val else "off"))
-            ttk.Combobox(
-                row, textvariable=adhan_var, values=["global", "on", "off"],
-                state="readonly", style="Dark.TCombobox", width=8,
-            ).pack(side="left", padx=(8, 0))
-
-            dnd_val = notif_settings.get(key, {}).get("dnd_bypass")
-            dnd_var = tk.StringVar(value="global" if dnd_val is None else ("on" if dnd_val else "off"))
-            ttk.Combobox(
-                row, textvariable=dnd_var, values=["global", "on", "off"],
-                state="readonly", style="Dark.TCombobox", width=8,
-            ).pack(side="left", padx=(8, 0))
-
-            self._prayer_notif_vars[key] = {
-                "enabled": enabled_var,
-                "reminder": reminder_var,
-                "adhan": adhan_var,
-                "dnd_bypass": dnd_var,
-            }
-
-        # --- Manual offsets ---
+        # =================================================================
+        # 5. Prayer adjustments — manual offsets
+        # =================================================================
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
         ttk.Label(main, text=t("manual_offsets"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
         ttk.Label(main, text=t("offsets_hint"), style="Dim.TLabel", wraplength=470, justify="left").pack(anchor="w", padx=inner_pad, pady=(0, 6))
@@ -935,26 +1003,13 @@ class SettingsWindow:
 
         ttk.Button(main, text=t("reset_offsets"), style="Dark.TButton", command=self._reset_offsets).pack(anchor="w", padx=inner_pad, pady=(6, 0))
 
-        # --- Saved Mosques section ---
+        # =================================================================
+        # 6. App — version and releases
+        # =================================================================
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
-        ttk.Label(main, text=t("saved_mosques"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
-
-        self.mosque_tree = ttk.Treeview(
-            main, columns=("url",), show="headings", height=4, selectmode="browse",
-        )
-        self.mosque_tree.heading("url", text="URL")
-        self.mosque_tree.column("url", width=460)
-        self.mosque_tree.pack(fill="x", padx=inner_pad, pady=(0, 4))
-        self.mosque_tree.bind("<Double-1>", self._on_mosque_double_click)
-
-        mosque_btn_frame = ttk.Frame(main, style="Dark.TFrame")
-        mosque_btn_frame.pack(fill="x", padx=inner_pad, pady=(0, 12))
-
-        ttk.Button(mosque_btn_frame, text=t("add_mosque"), style="Dark.TButton", command=self._add_current_mosque).pack(side="left")
-        ttk.Button(mosque_btn_frame, text=t("switch_mosque"), style="Accent.TButton", command=self._switch_mosque).pack(side="left", padx=(8, 0))
-        ttk.Button(mosque_btn_frame, text=t("remove_mosque"), style="Dark.TButton", command=self._remove_mosque).pack(side="left", padx=(8, 0))
-
-        self._populate_mosque_tree()
+        ttk.Label(main, text=t("app"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
+        ttk.Label(main, text=f"{t('app_version')}: {APP_VERSION}", style="Dim.TLabel").pack(anchor="w", padx=inner_pad)
+        ttk.Button(main, text=t("open_releases"), style="Dark.TButton", command=self._open_releases).pack(anchor="w", padx=inner_pad, pady=(6, 0))
 
         # --- Save All button at the bottom ---
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=(12, 8))
@@ -1024,12 +1079,17 @@ class SettingsWindow:
 
     def _save_url(self):
         url = self.url_var.get().strip()
-        if url:
-            self.app.settings["mosque_url"] = url
-            save_settings(self.app.settings)
-            self.win.destroy()
-            self._unbind_mousewheel()
-            self.app.refresh()
+        if not url:
+            return
+        if extract_slug(url) is None:
+            self._url_status_var.set(t("invalid_mawaqit_url"))
+            return
+        self._url_status_var.set("")
+        self.app.settings["mosque_url"] = url
+        save_settings(self.app.settings)
+        self.win.destroy()
+        self._unbind_mousewheel()
+        self.app.refresh()
 
     # --- Notifications ---
 
@@ -1041,6 +1101,17 @@ class SettingsWindow:
             self.app._schedule_notifications()
         else:
             self.app._cancel_notification_timers()
+
+    def _test_notification(self):
+        _send_raw_notification(t("test_notification"), APP_NAME)
+
+    # --- App ---
+
+    def _open_releases(self):
+        try:
+            subprocess.Popen(["xdg-open", REPO_RELEASES_PAGE])
+        except Exception:
+            pass
 
     # --- Adhan ---
 

@@ -20,3 +20,6 @@ xcuserdata/
 .venv/
 .pytest_cache/
 .wrangler/
+
+# Rust (Linux native spike)
+AlMunadiLinuxNative/target/
