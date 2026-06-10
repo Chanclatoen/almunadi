@@ -1,0 +1,21 @@
+<Application x:Class="AlMunadi.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#14130F" />
+        <SolidColorBrush x:Key="CardBrush" Color="#1F1D17" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#46C79E" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F1EDE2" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#AAB0A3" />
+        <SolidColorBrush x:Key="TextDimBrush" Color="#6E7466" />
+        <SolidColorBrush x:Key="SaffronBrush" Color="#E3B15A" />
+        <SolidColorBrush x:Key="DividerBrush" Color="#2D2B23" />
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="#0C1A14" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,55 @@
+name: Windows Native Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Test native core
+        run: dotnet test AlMunadiWindowsNative/AlMunadiWindowsNative.sln -c Release
+
+      - name: Publish native app
+        shell: pwsh
+        run: |
+          dotnet publish AlMunadiWindowsNative/AlMunadi.App/AlMunadi.App.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeAllContentForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o AlMunadiWindowsNative/publish
+
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $source = "AlMunadiWindowsNative/publish/AlMunadi.App.exe"
+          $target = "AlMunadiWindowsNative/publish/AlMunadi-Windows-Native-v$version.exe"
+          if (-not (Test-Path $source)) { throw "Native executable was not produced" }
+          Move-Item $source $target
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlMunadi-Windows-Native
+          path: AlMunadiWindowsNative/publish/AlMunadi-Windows-Native-*.exe
+
+      - name: Attach native app to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: AlMunadiWindowsNative/publish/AlMunadi-Windows-Native-*.exe

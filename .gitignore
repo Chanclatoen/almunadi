@@ -21,5 +21,9 @@ xcuserdata/
 .pytest_cache/
 .wrangler/
 
+# .NET
+**/bin/
+**/obj/
+
 # Rust (Linux native spike)
 AlMunadiLinuxNative/target/
