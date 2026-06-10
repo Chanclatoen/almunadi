@@ -11,7 +11,7 @@
   <Identity
     Name="net.almunadi.AlMunadiWidget"
     Publisher="CN=AlMunadi"
-    Version="1.0.9.0" />
+    Version="1.0.10.0" />
 
   <mp:PhoneIdentity PhoneProductId="81b9ff95-40c9-44ca-a8d0-18f34e778b52" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
