@@ -24,7 +24,8 @@ struct MenuBarLabel: View {
     var body: some View {
         let displayMode = service.displayMode
         let prayer = displayMode == "since" ? service.lastPrayer : service.nextPrayer
-        let text = prayer?.menuBarText(displayMode: displayMode, countdownFormat: service.countdownFormat) ?? t("next_prayer")
+        let fallback = service.mosqueUrl.isEmpty ? t("set_mosque") : t("next_prayer")
+        let text = prayer?.menuBarText(displayMode: displayMode, countdownFormat: service.countdownFormat) ?? fallback
 
         HStack(spacing: 4) {
             Image(systemName: prayer?.icon ?? "clock")
@@ -32,5 +33,6 @@ struct MenuBarLabel: View {
                 Text(text)
             }
         }
+        .help(text)
     }
 }

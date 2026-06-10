@@ -14,7 +14,7 @@ class PrayerService: ObservableObject {
     @Published var mosqueName: String = ""
     @Published var nextPrayer: PrayerTime?
     @Published var lastPrayer: PrayerTime?
-    @Published var lastError: String?
+    @Published var fetchFailed: Bool = false
     @Published var isCached: Bool = false
     @Published var jumua2: String?
     @Published var hijriDate: String?
@@ -128,6 +128,7 @@ class PrayerService: ObservableObject {
         get { UserDefaults.standard.string(forKey: "mosqueUrl") ?? "" }
         set {
             UserDefaults.standard.set(newValue, forKey: "mosqueUrl")
+            objectWillChange.send()
             fetchTimes()
         }
     }
@@ -265,10 +266,8 @@ class PrayerService: ObservableObject {
 
     func fetchTimes() {
         let urlString = mosqueUrl
-        guard !urlString.isEmpty else {
-            lastError = "No mosque URL configured"
-            return
-        }
+        // First run: nothing configured yet — the UI shows the welcome state.
+        guard !urlString.isEmpty else { return }
 
         if let slug = MawaqitURL.extractSlug(from: urlString) {
             fetchTimesApi(slug: slug) { [weak self] success in
@@ -347,8 +346,6 @@ class PrayerService: ObservableObject {
             handleFetchError("Invalid URL")
             return
         }
-
-        lastError = nil
 
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             DispatchQueue.main.async {
@@ -546,15 +543,18 @@ class PrayerService: ObservableObject {
 
         if !fromCache {
             isCached = false
-            lastError = nil
+            fetchFailed = false
             saveCache(data)
         }
         updateNextPrayer()
         scheduleNotifications()
     }
 
+    /// Errors are calm and localized: the UI only learns that the fetch
+    /// failed (it shows t("fetch_error")); the detail goes to the console.
     private func handleFetchError(_ message: String) {
-        lastError = message
+        print("Al Munadi fetch error: \(message)")
+        fetchFailed = true
         if prayers.isEmpty { loadCache() }
         retryFetchLater()
     }
