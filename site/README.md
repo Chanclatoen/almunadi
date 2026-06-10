@@ -1,6 +1,6 @@
 # Al Munadi Website
 
-This is a static GitHub Pages site for the project website and mosque finder.
+This is the static project website and mosque finder. It deploys to Cloudflare Pages (almunadi.net) through `.github/workflows/site-deploy.yml`, with GitHub Pages as a mirror.
 
 ## Local preview
 

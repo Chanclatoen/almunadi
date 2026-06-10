@@ -159,7 +159,7 @@ This creates a release with:
 
 ## Website
 
-The static website lives in `site/` and deploys to GitHub Pages on pushes to `main`.
+The static website lives in `site/`. Pushes to `main` deploy it to Cloudflare Pages (the `almunadi` project behind https://almunadi.net) via `.github/workflows/site-deploy.yml`, and to GitHub Pages as a mirror.
 
 The hosted mosque finder uses a Cloudflare Worker in `worker/` for live Mawaqit search because the Mawaqit endpoint does not expose browser CORS headers. After deploying the Worker, set the Worker origin (`apiBase`) in `site/config.js` — the committed config used by this project's deployment. `site/config.example.js` is a template for forks. Leave `apiBase` empty only when the Worker is mounted under the same site domain.
 
