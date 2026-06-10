@@ -164,6 +164,8 @@ on a GNOME Shell session (`make install` / nested shell).
 
 ## 5. Workstream C — Windows native rewrite (C#/.NET; needs .NET 8 SDK)
 
+**Detailed session handover: `docs/HANDOVER-WINDOWS.md`** (includes the
+Python-app smoke test from Workstream E and the full build order).
 Full plan: `shared/migration-plan.md`. Summary of next actions:
 
 1. Scaffold `AlMunadiWindowsNative/`: .NET 8, WPF settings window + tray popup,
