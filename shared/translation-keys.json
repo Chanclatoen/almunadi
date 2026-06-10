@@ -48,6 +48,6 @@
     "sections": ["display", "app", "app_version"]
   },
   "todo": [
-    "GNOME translations/*.json and macOS Translations.swift do not yet include the first-run/test-adhan/reset-offsets/test-notification keys added in Python core; add them when those UIs adopt the new flows."
+    "GNOME translations/*.json does not yet include the first-run/test-adhan/reset-offsets/test-notification keys added in Python core; add them when that UI adopts the new flows."
   ]
 }

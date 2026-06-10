@@ -39,7 +39,7 @@ struct PrayerTimesView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "clock.arrow.circlepath")
                                 .font(.system(size: 9))
-                            Text(t("using_cached_data"))
+                            Text(t("cached_data"))
                                 .font(.system(size: 10))
                         }
                         .foregroundStyle(.orange.opacity(0.8))
