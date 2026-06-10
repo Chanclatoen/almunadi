@@ -17,8 +17,9 @@ session/developer and they have everything needed to execute and verify.
     future native apps share the same files).
   - `translation-keys.json` — canonical key registry (86 keys × 5 languages).
   - `fixtures/behavior-fixtures.json` — executable behavior cases asserted by
-    **three** suites: Python (72 tests), GNOME JS (184), Rust (8). Any port must
-    assert these fixtures before shipping.
+    **four** suites: Python (72 tests), GNOME JS (184), Rust (8), Swift/XCTest
+    (9, `AlMunadiMac/AlMunadiTests/`). Any port must assert these fixtures
+    before shipping.
   - `migration-plan.md` — native rewrite plan (Windows C#/.NET, Linux Rust/GTK).
 - **Python apps** (`AlMunadiWindows/`, `AlMunadiLinux/`, on the branch): full
   brand-identity repaint, first-run flow, async search, next-prayer card popup,
@@ -30,7 +31,16 @@ session/developer and they have everything needed to execute and verify.
   `cargo test` green against the shared fixtures.
 - **GNOME**: accent recolor (blue → emerald, error → saffron) in
   `stylesheet.css` only; logic untouched.
-- **macOS**: untouched this round (no Xcode in the sandbox) — see Workstream A.
+- **macOS** (`AlMunadiMac/`): **Workstream A done** — brand repaint (emerald
+  next-prayer highlight + accent bar, saffron Shuruq/Jumuah, per-prayer hues),
+  first-run welcome state + `set_mosque` bar label, next-prayer card with live
+  countdown, six-section settings with Test notification / Test adhan / Stop
+  adhan / Reset offsets / App section, pasted-URL validation, localized
+  cached/fetch-error states, widget setup + stale-cache states, all new
+  translation keys, dnd_platform_note honesty footer, and an XCTest fixture
+  suite. Verified: Release build, `xcodebuild test` (9 green), and
+  `build-release.sh` end-to-end on Xcode 26. Remaining: a visual smoke pass
+  on a real desktop session (languages/RTL, widget gallery) before release.
 
 ## 2. Ground rules (apply to every workstream)
 
@@ -68,7 +78,7 @@ Maghrib `#C96B4A` · Isha `#7D93C4`.
 
 ---
 
-## 3. Workstream A — macOS app polish (needs a Mac with Xcode 15+)
+## 3. Workstream A — macOS app polish (DONE 2026-06-10; kept for reference)
 
 Repo dir: `AlMunadiMac/`. The Xcode project is generated: `brew install
 xcodegen && xcodegen generate`, then build the **AlMunadi** scheme, or
@@ -216,10 +226,13 @@ Full plan: `shared/migration-plan.md`. Summary of next actions:
 
 ```bash
 python -m pytest AlMunadiWindows/test_al_munadi.py -q   # Python core + apps (72)
-node --test tests/                                       # GNOME JS utils (184)
+node --test tests/test_utils.js                          # GNOME JS utils (184)
 cargo test --manifest-path AlMunadiLinuxNative/Cargo.toml  # Rust core (8)
 node --test site/tests/                                  # site utils (36)
+cd AlMunadiMac && xcodegen generate && \
+  xcodebuild test -project AlMunadi.xcodeproj -scheme AlMunadi \
+  -destination 'platform=macOS'                          # Swift behavior core (9)
 ```
 
-All four suites must stay green; the first three assert the same
+All five suites must stay green; all but the site suite assert the same
 `shared/fixtures/behavior-fixtures.json`.

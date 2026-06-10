@@ -36,11 +36,19 @@ brew install xcodegen        # only needed if you change project.yml
 
 If you edit `project.yml`, regenerate the project with `xcodegen generate`.
 
+To run the behavior test suite (asserts the cross-platform cases in
+`shared/fixtures/behavior-fixtures.json`, like the Python/JS/Rust suites):
+
+```bash
+xcodegen generate
+xcodebuild test -project AlMunadi.xcodeproj -scheme AlMunadi -destination 'platform=macOS'
+```
+
 ## Features
 
 - **Menu bar display** — next prayer name, time, and live countdown with contextual icons (sunrise, sun, clouds, sunset, moon)
 - **Desktop widget** (small / medium / large, macOS 14+) — next prayer + countdown, all 5 prayers, or full layout with iqama, Hijri date and Qibla direction; reloads at each prayer-time transition. Add via right-click on the desktop → **Edit Widgets** → Al Munadi.
-- **Prayer times dropdown** — click to see all 5 prayers + Shuruq, with the next prayer highlighted in blue
+- **Prayer times dropdown** — next-prayer card with live countdown, all 5 prayers + Shuruq, with the next prayer highlighted in emerald
 - **Iqama times** — shown under each prayer when your mosque provides them
 - **Jumuah support** — automatically shows Friday prayer time instead of Dhuhr, plus Jumuah 2 if available
 - **Native notifications** — macOS alerts at each prayer time (toggle on/off in Settings)
@@ -66,11 +74,11 @@ If you edit `project.yml`, regenerate the project with `xcodegen generate`.
 
 Settings are stored in macOS `UserDefaults` (standard for native apps). Cached prayer data persists across restarts for offline support.
 
-| Setting | Description |
-|---------|-------------|
-| Mosque URL | Your mosque's Mawaqit URL |
-| Prayer notifications | Toggle desktop notifications on/off |
-| Launch at login | Start AlMunadi when you log in |
+Settings are grouped into six sections: **Mosque** (search, paste URL, saved
+mosques) → **Display** (language, display mode, countdown format) →
+**Notifications** (global + per-prayer, test notification) → **Adhan**
+(audio file, test/stop) → **Prayer adjustments** (per-prayer offsets, reset)
+→ **App** (version, releases page, launch at login).
 
 ## Widget data sharing (App Group)
 
