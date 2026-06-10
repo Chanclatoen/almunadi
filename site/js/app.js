@@ -10,7 +10,7 @@ import {
     sanitizeMosque,
     serviceBadges,
     sortMosques,
-} from './mosque-utils.js';
+} from './mosque-utils.js?v=2';
 
 const config = window.AL_MUNADI_CONFIG || {};
 const state = {
