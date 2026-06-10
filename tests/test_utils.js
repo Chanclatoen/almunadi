@@ -174,6 +174,46 @@ for (const lang of tf.supported_languages) {
     }
 }
 
+// --- Shared cross-platform fixtures (shared/fixtures/behavior-fixtures.json) ---
+// The Python suite asserts the same cases, so platform behavior cannot drift.
+const shared = JSON.parse(readFileSync(new URL('../shared/fixtures/behavior-fixtures.json', import.meta.url), 'utf-8'));
+
+for (const fmt of ['compact', 'full']) {
+    for (const tc of shared.countdown[fmt]) {
+        assertEqual(formatCountdown(tc.remaining_minutes, fmt), tc.expected, `shared countdown ${fmt}: ${tc.remaining_minutes}m`);
+    }
+}
+
+for (const tc of shared.tray_title) {
+    assertEqual(
+        formatTrayText({ displayMode: tc.mode, countdownFormat: 'compact', name: tc.name, time: tc.time, remainingMinutes: tc.remaining_minutes }),
+        tc.expected,
+        `shared tray title: ${tc.mode}`
+    );
+}
+
+for (const tc of shared.iqama) {
+    assertEqual(resolveIqama(tc.prayer_time, tc.iqama), tc.expected, `shared iqama: ${JSON.stringify(tc.iqama)}`);
+}
+
+const sharedApply = shared.prayer_offsets.apply;
+assertEqual(
+    JSON.stringify(applyPrayerOffsets(sharedApply.times, sharedApply.offsets)),
+    JSON.stringify(sharedApply.expected),
+    'shared applyPrayerOffsets'
+);
+for (const tc of shared.prayer_offsets.clamp) {
+    assertEqual(mergePrayerOffsets({ Fajr: tc.input }).Fajr, tc.expected, `shared offset clamp: ${JSON.stringify(tc.input)}`);
+}
+
+for (const tc of shared.jumuah_notification_key) {
+    assertEqual(notificationKeyForIndex(tc.index, tc.is_friday, tc.has_jumua), tc.expected, `shared jumuah key: index ${tc.index}`);
+}
+
+for (const tc of shared.slug_extraction) {
+    assertEqual(slugFromUrl(tc.input), tc.expected, `shared slug: "${tc.input}"`);
+}
+
 // --- Summary ---
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

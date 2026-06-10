@@ -83,6 +83,16 @@ TRANSLATIONS = {
         "since_last_prayer": "Since {name}",
         "dnd_bypass": "Break through Do Not Disturb",
         "dnd_bypass_per_prayer": "DND bypass",
+        "set_mosque": "Set mosque",
+        "first_run_title": "Welcome to Al Munadi",
+        "first_run_body": "Connect your mosque to show prayer times here. Al Munadi uses public Mawaqit mosque pages.",
+        "searching": "Searching...",
+        "test_adhan": "Test adhan",
+        "stop_adhan": "Stop adhan",
+        "reset_offsets": "Reset offsets",
+        "reminder_body": "{name} in {minutes} min",
+        "adhan_file_missing": "Adhan file not found",
+        "offsets_hint": "Use only if your mosque's displayed time needs a local correction.",
     },
     "nl": {
         "prayer_fajr": "Fajr",
@@ -153,6 +163,16 @@ TRANSLATIONS = {
         "since_last_prayer": "Sinds {name}",
         "dnd_bypass": "Niet storen doorbreken",
         "dnd_bypass_per_prayer": "Niet storen",
+        "set_mosque": "Moskee instellen",
+        "first_run_title": "Welkom bij Al Munadi",
+        "first_run_body": "Verbind je moskee om hier gebedstijden te tonen. Al Munadi gebruikt openbare Mawaqit-moskeepagina's.",
+        "searching": "Zoeken...",
+        "test_adhan": "Adhan testen",
+        "stop_adhan": "Adhan stoppen",
+        "reset_offsets": "Correcties herstellen",
+        "reminder_body": "{name} over {minutes} min",
+        "adhan_file_missing": "Adhan-bestand niet gevonden",
+        "offsets_hint": "Gebruik dit alleen als de tijd van je moskee een lokale correctie nodig heeft.",
     },
     "ar": {
         "prayer_fajr": "فجر",
@@ -211,6 +231,28 @@ TRANSLATIONS = {
         "hijri_date": "التاريخ الهجري",
         "qibla": "القبلة",
         "since_last_prayer": "منذ {name}",
+        "display_mode": "وضع العرض",
+        "display_mode_countdown": "عد تنازلي",
+        "display_mode_time": "الوقت",
+        "display_mode_name": "الاسم فقط",
+        "display_mode_compact": "مختصر",
+        "display_mode_icon": "أيقونة فقط",
+        "display_mode_since": "منذ آخر صلاة",
+        "per_prayer_notifications": "إشعارات لكل صلاة",
+        "prayer_reminder": "تذكير (دقائق قبل)",
+        "prayer_offset": "تعديل الوقت (دقائق)",
+        "manual_offsets": "تعديلات يدوية للوقت",
+        "adhan_per_prayer": "أذان",
+        "set_mosque": "حدد المسجد",
+        "first_run_title": "مرحبًا بك في المنادي",
+        "first_run_body": "اربط مسجدك لعرض أوقات الصلاة هنا. يستخدم المنادي صفحات مواقيت العامة.",
+        "searching": "جاري البحث...",
+        "test_adhan": "تجربة الأذان",
+        "stop_adhan": "إيقاف الأذان",
+        "reset_offsets": "إعادة تعيين التعديلات",
+        "reminder_body": "{name} بعد {minutes} دقيقة",
+        "adhan_file_missing": "ملف الأذان غير موجود",
+        "offsets_hint": "استخدم هذا فقط إذا كان وقت مسجدك يحتاج إلى تعديل محلي.",
     },
     "fr": {
         "prayer_fajr": "Fajr",
@@ -269,6 +311,28 @@ TRANSLATIONS = {
         "hijri_date": "Date hegirienne",
         "qibla": "Qibla",
         "since_last_prayer": "Depuis {name}",
+        "display_mode": "Mode d'affichage",
+        "display_mode_countdown": "Compte a rebours",
+        "display_mode_time": "Heure",
+        "display_mode_name": "Nom seul",
+        "display_mode_compact": "Compact",
+        "display_mode_icon": "Icone seule",
+        "display_mode_since": "Depuis la derniere priere",
+        "per_prayer_notifications": "Notifications par priere",
+        "prayer_reminder": "Rappel (min avant)",
+        "prayer_offset": "Correction (minutes)",
+        "manual_offsets": "Corrections manuelles",
+        "adhan_per_prayer": "Adhan",
+        "set_mosque": "Choisir la mosquee",
+        "first_run_title": "Bienvenue dans Al Munadi",
+        "first_run_body": "Connectez votre mosquee pour afficher les horaires ici. Al Munadi utilise les pages publiques Mawaqit.",
+        "searching": "Recherche...",
+        "test_adhan": "Tester l'adhan",
+        "stop_adhan": "Arreter l'adhan",
+        "reset_offsets": "Reinitialiser les corrections",
+        "reminder_body": "{name} dans {minutes} min",
+        "adhan_file_missing": "Fichier adhan introuvable",
+        "offsets_hint": "Utilisez ceci uniquement si l'horaire affiche necessite une correction locale.",
     },
     "tr": {
         "prayer_fajr": "Sabah",
@@ -327,6 +391,28 @@ TRANSLATIONS = {
         "hijri_date": "Hicri tarih",
         "qibla": "Kible",
         "since_last_prayer": "{name}'dan beri",
+        "display_mode": "Gorunum modu",
+        "display_mode_countdown": "Geri sayim",
+        "display_mode_time": "Saat",
+        "display_mode_name": "Yalniz ad",
+        "display_mode_compact": "Kisa",
+        "display_mode_icon": "Yalniz simge",
+        "display_mode_since": "Son namazdan beri",
+        "per_prayer_notifications": "Namaz basina bildirim",
+        "prayer_reminder": "Hatirlatma (dk once)",
+        "prayer_offset": "Saat duzeltme (dakika)",
+        "manual_offsets": "Elle saat duzeltmeleri",
+        "adhan_per_prayer": "Ezan",
+        "set_mosque": "Cami sec",
+        "first_run_title": "Al Munadi'ye hos geldiniz",
+        "first_run_body": "Namaz vakitlerini burada gormek icin caminizi baglayin. Al Munadi herkese acik Mawaqit cami sayfalarini kullanir.",
+        "searching": "Araniyor...",
+        "test_adhan": "Ezani dene",
+        "stop_adhan": "Ezani durdur",
+        "reset_offsets": "Duzeltmeleri sifirla",
+        "reminder_body": "{minutes} dakika sonra {name}",
+        "adhan_file_missing": "Ezan dosyasi bulunamadi",
+        "offsets_hint": "Bunu yalnizca caminizin gosterilen saati yerel bir duzeltme gerektiriyorsa kullanin.",
     },
 }
 
@@ -405,8 +491,11 @@ SETTINGS_DEFAULTS = {
     "display_mode": "countdown",
     "countdown_format": "compact",
     "dnd_bypass": True,
-        "saved_mosques": [],
-    }
+    "saved_mosques": [],
+}
+
+VALID_DISPLAY_MODES = ["countdown", "since", "time", "name", "compact", "icon"]
+VALID_COUNTDOWN_FORMATS = ["compact", "full"]
 
 
 def normalize_settings(data):
@@ -415,6 +504,13 @@ def normalize_settings(data):
     for key, default in SETTINGS_DEFAULTS.items():
         if key not in data:
             data[key] = default
+    if data.get("display_mode") not in VALID_DISPLAY_MODES:
+        data["display_mode"] = "countdown"
+    if data.get("countdown_format") not in VALID_COUNTDOWN_FORMATS:
+        data["countdown_format"] = "compact"
+    if data.get("language") not in TRANSLATIONS:
+        data["language"] = "en"
+    data["saved_mosques"] = normalize_saved_mosques(data.get("saved_mosques"))
     if "prayer_notification_settings" not in data:
         data["prayer_notification_settings"] = default_prayer_notification_settings()
     else:
@@ -426,6 +522,23 @@ def normalize_settings(data):
     else:
         data["prayer_offsets"] = merge_prayer_offsets(data.get("prayer_offsets"))
     return data
+
+
+def normalize_saved_mosques(stored):
+    """Keep only valid {url, name} entries and drop duplicate URLs."""
+    if not isinstance(stored, list):
+        return []
+    result = []
+    seen = set()
+    for entry in stored:
+        if not isinstance(entry, dict):
+            continue
+        url = str(entry.get("url") or "").strip()
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        result.append({"url": url, "name": str(entry.get("name") or "")})
+    return result
 
 
 def build_cache_payload(data):
@@ -523,7 +636,8 @@ def extract_slug(url):
 
 def fetch_times_api(slug):
     resp = requests.get(
-        f"{API_BASE}/search?word={slug}",
+        f"{API_BASE}/search",
+        params={"word": slug},
         headers={"Accept": "application/json"},
         timeout=15,
     )
@@ -588,7 +702,8 @@ def fetch_times(url):
 
 def search_mosques(query):
     resp = requests.get(
-        f"{API_BASE}/search?word={query}",
+        f"{API_BASE}/search",
+        params={"word": query},
         headers={"Accept": "application/json"},
         timeout=15,
     )
@@ -743,6 +858,14 @@ def default_prayer_offsets():
     return {key: 0 for key in PRAYER_OFFSET_KEYS}
 
 
+def _as_int(value, default=0):
+    """Coerce a stored setting to int without raising on junk values."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def merge_prayer_notification_settings(stored):
     merged = default_prayer_notification_settings()
     if not isinstance(stored, dict):
@@ -750,11 +873,13 @@ def merge_prayer_notification_settings(stored):
     for key in NOTIFICATION_PRAYER_KEYS:
         if key in stored and isinstance(stored[key], dict):
             entry = stored[key]
+            adhan = entry.get("adhan_enabled")
+            dnd = entry.get("dnd_bypass")
             merged[key] = {
                 "enabled": entry.get("enabled", True) is not False,
-                "reminder_minutes": max(0, int(entry.get("reminder_minutes") or 0)),
-                "adhan_enabled": entry.get("adhan_enabled"),
-                "dnd_bypass": entry.get("dnd_bypass"),
+                "reminder_minutes": max(0, min(120, _as_int(entry.get("reminder_minutes")))),
+                "adhan_enabled": adhan if isinstance(adhan, bool) else None,
+                "dnd_bypass": dnd if isinstance(dnd, bool) else None,
             }
     return merged
 
@@ -765,7 +890,7 @@ def merge_prayer_offsets(stored):
         return merged
     for key in PRAYER_OFFSET_KEYS:
         if key in stored:
-            val = int(stored[key] or 0)
+            val = _as_int(stored[key])
             merged[key] = max(-60, min(60, val))
     return merged
 
@@ -814,6 +939,19 @@ def format_tray_title(name, time_str, countdown, display_mode, settings=None):
     return "  ".join(parts) if parts else name or t("next_prayer")
 
 
+def version_tuple(version):
+    """Parse "1.2.3" into a comparable tuple, tolerating junk like "1.2.3-beta"."""
+    parts = []
+    for chunk in str(version or "").split("."):
+        digits = re.match(r"\d+", chunk.strip())
+        parts.append(int(digits.group()) if digits else 0)
+    return tuple(parts) if parts else (0,)
+
+
+def is_newer_version(current_version, latest_version):
+    return version_tuple(latest_version) > version_tuple(current_version)
+
+
 def check_for_update(current_version, tag_prefix):
     resp = requests.get(RELEASES_URL, timeout=10)
     resp.raise_for_status()
@@ -822,9 +960,7 @@ def check_for_update(current_version, tag_prefix):
         tag = release.get("tag_name", "")
         if tag.startswith(tag_prefix):
             latest = tag[len(tag_prefix):]
-            current_tuple = tuple(int(x) for x in current_version.split("."))
-            latest_tuple = tuple(int(x) for x in latest.split("."))
-            if latest_tuple > current_tuple:
+            if is_newer_version(current_version, latest):
                 html_url = release.get("html_url", REPO_RELEASES_PAGE)
                 return (latest, html_url)
             return None

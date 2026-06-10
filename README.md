@@ -129,11 +129,19 @@ The GNOME `metadata.json` uses two version fields: `app-version` follows the app
 
 ## Source Layout
 
+- Shared behavior spec, schemas, and fixtures: `shared/` (see `shared/product-behavior.md`)
 - Shared Python logic: `core/al_munadi_core.py`
 - Windows tray entrypoint: `AlMunadiWindows/al_munadi.py`
 - Linux tray entrypoint: `AlMunadiLinux/al_munadi_linux.py`
 - GNOME Shell extension: `extension.js`, `prefs.js`, `metadata.json`, `schemas/`
 - macOS menu bar app: `AlMunadiMac/`
+
+The `shared/` directory keeps platform behavior consistent without forcing one
+codebase: every client implements `shared/product-behavior.md`, persists data
+matching `shared/settings-schema.json` / `shared/cache-schema.json`, and the
+Python and GNOME test suites both assert `shared/fixtures/behavior-fixtures.json`.
+The plan for native Windows (C#/.NET) and Linux (Rust/GTK or Qt) rewrites lives
+in `shared/migration-plan.md`.
 
 ## How It Works
 

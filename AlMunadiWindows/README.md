@@ -38,10 +38,14 @@ The executable will be in `dist/AlMunadi.exe`.
 - **Iqama times** displayed when your mosque provides them
 - **Jumuah support** — automatically shows Friday prayer time instead of Dhuhr
 - **Windows toast notifications** at each prayer time (toggle on/off in settings or tray menu)
-- **Mosque search** — find your mosque by name or city from the settings window
+- **Mosque search** — find your mosque by name or city from the settings window (runs in the background, so the window never freezes)
+- **First-run welcome** — before a mosque is configured, the tray label shows "Set mosque" and the popup guides you to setup
+- **Adhan controls** — choose your own WAV file, with Test adhan and Stop adhan buttons in settings
+- **Manual offsets** — per-prayer corrections (±60 min) with a one-click Reset offsets button
 - **Offline cache** — works when your network is down using the last fetched data
 - **Mawaqit API** with HTML scraping fallback
 - **DPI-aware** — crisp on high-resolution displays
+- **Al Munadi look** — calm charcoal/emerald theme shared with the other platforms
 
 ## Usage
 

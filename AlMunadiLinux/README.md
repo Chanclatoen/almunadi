@@ -65,11 +65,14 @@ The binary will be in `dist/AlMunadiLinux`. Copy it anywhere and run it directly
 - **Jumuah support** -- automatically shows Friday prayer time instead of Dhuhr on Fridays
 - **Desktop notifications** at each prayer time via `notify-send` (toggle on/off)
 - **Adhan audio playback** -- plays an audio file at prayer time using `paplay`, `mpv`, or `aplay`
-- **Mosque search** -- find your mosque by name or city from the settings window
+- **Mosque search** -- find your mosque by name or city from the settings window (runs in the background, so the window never freezes)
+- **First-run welcome** -- before a mosque is configured, the tray label shows "Set mosque" and the popup guides you to setup
+- **Adhan controls** -- Test adhan and Stop adhan buttons in settings; missing files show a friendly message
+- **Manual offsets** -- per-prayer corrections (±60 min) with a one-click Reset offsets button
 - **Multi-mosque support** -- save multiple mosques and switch between them
 - **Offline cache** -- works when your network is down using the last fetched data
 - **Mawaqit API** with HTML scraping fallback
-- **Localization** -- English, Arabic, French, and Turkish
+- **Localization** -- English, Dutch, Arabic, French, and Turkish
 - **Countdown format** -- choose between compact (`-2h15m`) and full (`-2h 15m`)
 - **Precise notifications** -- uses `threading.Timer` for exact prayer-time alerts
 - **Error recovery** with automatic retry from cache

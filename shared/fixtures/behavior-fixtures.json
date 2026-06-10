@@ -1,0 +1,84 @@
+{
+  "description": "Cross-platform behavior fixtures. Python (core/al_munadi_core.py via AlMunadiWindows/test_al_munadi.py) and GNOME JS (tests/test_utils.js) both assert against this file so the platforms cannot drift apart. Swift/macOS should adopt the same cases (see shared/product-behavior.md).",
+  "countdown": {
+    "compact": [
+      { "remaining_minutes": 150, "expected": "-2h30m" },
+      { "remaining_minutes": 60, "expected": "-1h00m" },
+      { "remaining_minutes": 15, "expected": "-15m" },
+      { "remaining_minutes": 1, "expected": "-1m" },
+      { "remaining_minutes": 0, "expected": "now" }
+    ],
+    "full": [
+      { "remaining_minutes": 150, "expected": "-2h 30m" },
+      { "remaining_minutes": 60, "expected": "-1h 00m" },
+      { "remaining_minutes": 15, "expected": "-15m" },
+      { "remaining_minutes": 1, "expected": "-1m" },
+      { "remaining_minutes": 0, "expected": "now" }
+    ]
+  },
+  "elapsed_since": {
+    "compact": [
+      { "elapsed_minutes": 75, "expected": "+1h15m" },
+      { "elapsed_minutes": 60, "expected": "+1h00m" },
+      { "elapsed_minutes": 12, "expected": "+12m" },
+      { "elapsed_minutes": 0, "expected": "now" }
+    ],
+    "full": [
+      { "elapsed_minutes": 75, "expected": "+1h 15m" },
+      { "elapsed_minutes": 12, "expected": "+12m" }
+    ]
+  },
+  "tray_title": [
+    { "mode": "countdown", "name": "Dhuhr", "time": "13:41", "countdown": "-2h18m", "remaining_minutes": 138, "expected": "Dhuhr  13:41  -2h18m" },
+    { "mode": "time", "name": "Dhuhr", "time": "13:41", "countdown": "-2h18m", "remaining_minutes": 138, "expected": "Dhuhr  13:41" },
+    { "mode": "name", "name": "Dhuhr", "time": "13:41", "countdown": "-2h18m", "remaining_minutes": 138, "expected": "Dhuhr" },
+    { "mode": "compact", "name": "Dhuhr", "time": "13:41", "countdown": "-2h18m", "remaining_minutes": 138, "expected": "Dhuhr  -2h18m" },
+    { "mode": "icon", "name": "Dhuhr", "time": "13:41", "countdown": "-2h18m", "remaining_minutes": 138, "expected": "Dhuhr" }
+  ],
+  "iqama": [
+    { "prayer_time": "12:30", "iqama": "+15", "expected": "12:45" },
+    { "prayer_time": "12:30", "iqama": "15", "expected": "12:45" },
+    { "prayer_time": "12:50", "iqama": "+20", "expected": "13:10" },
+    { "prayer_time": "12:30", "iqama": "13:00", "expected": "13:00" },
+    { "prayer_time": "12:30", "iqama": "+0", "expected": null },
+    { "prayer_time": "12:30", "iqama": "0", "expected": null },
+    { "prayer_time": "12:30", "iqama": "", "expected": null },
+    { "prayer_time": "12:30", "iqama": null, "expected": null }
+  ],
+  "prayer_offsets": {
+    "apply": {
+      "times": ["05:30", "12:30", "16:00", "20:30", "22:00"],
+      "offsets": { "Fajr": 5, "Dhuhr": -10, "Maghrib": 15, "Isha": -5 },
+      "expected": ["05:35", "12:20", "16:00", "20:45", "21:55"]
+    },
+    "clamp": [
+      { "input": 90, "expected": 60 },
+      { "input": -90, "expected": -60 },
+      { "input": 30, "expected": 30 },
+      { "input": "junk", "expected": 0 },
+      { "input": null, "expected": 0 }
+    ]
+  },
+  "jumuah_notification_key": [
+    { "index": 1, "is_friday": true, "has_jumua": true, "expected": "Jumuah" },
+    { "index": 1, "is_friday": false, "has_jumua": true, "expected": "Dhuhr" },
+    { "index": 1, "is_friday": true, "has_jumua": false, "expected": "Dhuhr" },
+    { "index": 0, "is_friday": true, "has_jumua": true, "expected": "Fajr" }
+  ],
+  "version_compare": [
+    { "current": "1.0.8", "latest": "1.0.9", "is_newer": true },
+    { "current": "1.0.8", "latest": "1.0.8", "is_newer": false },
+    { "current": "1.0.8", "latest": "1.0.7", "is_newer": false },
+    { "current": "1.0.9", "latest": "1.0.10", "is_newer": true },
+    { "current": "1.9.0", "latest": "1.10.0", "is_newer": true },
+    { "current": "1.0.8", "latest": "1.0.9-beta", "is_newer": true },
+    { "current": "1.0.8", "latest": "", "is_newer": false }
+  ],
+  "slug_extraction": [
+    { "input": "https://mawaqit.net/en/w/arrahmaan-dordrecht", "expected": "arrahmaan-dordrecht" },
+    { "input": "https://mawaqit.net/en/arrahmaan-dordrecht", "expected": "arrahmaan-dordrecht" },
+    { "input": "https://mawaqit.net/fr/w/my-mosque/", "expected": "my-mosque" },
+    { "input": "https://example.com/mosque", "expected": null },
+    { "input": "", "expected": null }
+  ]
+}

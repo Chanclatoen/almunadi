@@ -32,32 +32,38 @@ os.makedirs(APP_DATA_DIR, exist_ok=True)
 SETTINGS_FILE = os.path.join(APP_DATA_DIR, "settings.json")
 CACHE_FILE = os.path.join(APP_DATA_DIR, "cache.json")
 
+# Al Munadi visual identity: deep charcoal surfaces, emerald primary, saffron
+# accent, refined prayer hues. Matches the website and GNOME/macOS styling.
 PRAYER_COLORS = {
-    "Fajr": "#FFB74D",
-    "Dhuhr": "#FFEB3B",
-    "Jumuah": "#FFEB3B",
-    "Asr": "#FFA726",
-    "Maghrib": "#EF6C00",
-    "Isha": "#648CC8",
+    "Fajr": "#D9A05B",
+    "Dhuhr": "#E3B15A",
+    "Jumuah": "#E3B15A",
+    "Asr": "#BC8A52",
+    "Maghrib": "#C96B4A",
+    "Isha": "#7D93C4",
 }
 
 PRAYER_COLORS_RGB = {
-    "Fajr": (255, 183, 77),
-    "Dhuhr": (255, 235, 59),
-    "Jumuah": (255, 235, 59),
-    "Asr": (255, 167, 38),
-    "Maghrib": (239, 108, 0),
-    "Isha": (100, 140, 200),
+    "Fajr": (217, 160, 91),
+    "Dhuhr": (227, 177, 90),
+    "Jumuah": (227, 177, 90),
+    "Asr": (188, 138, 82),
+    "Maghrib": (201, 107, 74),
+    "Isha": (125, 147, 196),
 }
 
-BG_COLOR = "#1a1a2e"
-CARD_COLOR = "#16213e"
-CARD_HOVER = "#1a2744"
-ACCENT = "#4a90d9"
-TEXT_PRIMARY = "#e8e8e8"
-TEXT_SECONDARY = "#8899aa"
-TEXT_DIM = "#556677"
-HIGHLIGHT_BG = "#1e3a5f"
+BG_COLOR = "#14130F"
+CARD_COLOR = "#1F1D17"
+CARD_HOVER = "#27241C"
+ACCENT = "#46C79E"
+ACCENT_HOVER = "#5ED2AC"
+ON_ACCENT = "#0C1A14"
+TEXT_PRIMARY = "#F1EDE2"
+TEXT_SECONDARY = "#AAB0A3"
+TEXT_DIM = "#6E7466"
+HIGHLIGHT_BG = "#1B2E26"
+SHURUQ_ACCENT = "#E3B15A"
+ERROR_TEXT = "#E0B36A"
 FONT_FAMILY = "DejaVu Sans"
 
 
@@ -214,6 +220,17 @@ def send_notification(prayer_name, time_str, bypass_dnd=False):
     translated_name = _translate_prayer(prayer_name)
     title = t("notification_title", name=translated_name, time=time_str)
     body = t("notification_body", name=translated_name)
+    _send_raw_notification(title, body, bypass_dnd)
+
+
+def send_reminder_notification(prayer_name, minutes, bypass_dnd=False):
+    """Send a pre-prayer reminder notification ("Dhuhr in 10 min")."""
+    translated_name = _translate_prayer(prayer_name)
+    body = t("reminder_body", name=translated_name, minutes=minutes)
+    _send_raw_notification(translated_name, body, bypass_dnd)
+
+
+def _send_raw_notification(title, body, bypass_dnd=False):
     cmd = ["notify-send", "--app-name", APP_NAME]
     if bypass_dnd:
         cmd.extend(["--urgency", "critical"])
@@ -230,17 +247,24 @@ def send_notification(prayer_name, time_str, bypass_dnd=False):
 _adhan_process = None
 
 
+def _stop_adhan():
+    """Stop the currently playing adhan, if any."""
+    global _adhan_process
+    if _adhan_process and _adhan_process.poll() is None:
+        try:
+            _adhan_process.terminate()
+        except Exception:
+            pass
+    _adhan_process = None
+
+
 def _play_adhan(path):
     """Play an adhan audio file using available Linux audio players."""
     global _adhan_process
     if not path or not os.path.isfile(path):
         return
     # Kill any previous adhan playback
-    if _adhan_process and _adhan_process.poll() is None:
-        try:
-            _adhan_process.terminate()
-        except Exception:
-            pass
+    _stop_adhan()
     # Try paplay (PulseAudio), then mpv, then aplay (ALSA)
     players = [
         ["paplay", path],
@@ -321,14 +345,14 @@ class PrayerTimesWindow:
         # Update available banner
         if self.app.update_info:
             update_ver, update_url = self.app.update_info
-            update_frame = tk.Frame(self.win, bg="#1a3050", padx=10, pady=6)
+            update_frame = tk.Frame(self.win, bg=HIGHLIGHT_BG, padx=10, pady=6)
             update_frame.pack(fill="x", padx=pad, pady=(4, 4))
             update_label = tk.Label(
                 update_frame,
                 text=f"⬆ {t('update_available')} — v{update_ver}",
                 font=(FONT_FAMILY, 10, "bold"),
                 fg=ACCENT,
-                bg="#1a3050",
+                bg=HIGHLIGHT_BG,
                 cursor="hand2",
             )
             update_label.pack(fill="x")
@@ -359,6 +383,8 @@ class PrayerTimesWindow:
                 tk.Frame(self.win, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=2)
                 self._build_simple_row(t("prayer_jumuah2"), self.app.jumua2)
 
+        elif not self.app.settings.get("mosque_url"):
+            self._build_first_run_state()
         else:
             tk.Label(
                 self.win,
@@ -368,10 +394,10 @@ class PrayerTimesWindow:
                 bg=BG_COLOR,
             ).pack(pady=20)
 
-        # Shuruq
+        # Shuruq with warm saffron accent
         if self.app.shuruq:
             tk.Frame(self.win, bg=TEXT_DIM, height=1).pack(fill="x", padx=pad, pady=(8, 4))
-            self._build_simple_row(t("prayer_shuruq"), self.app.shuruq)
+            self._build_shuruq_row(t("prayer_shuruq"), self.app.shuruq)
 
         # Status / error
         if self.app.last_error:
@@ -383,7 +409,7 @@ class PrayerTimesWindow:
                 self.win,
                 text=msg,
                 font=(FONT_FAMILY, 9),
-                fg="#cc7744",
+                fg=ERROR_TEXT,
                 bg=BG_COLOR,
                 anchor="w",
                 wraplength=300,
@@ -463,6 +489,55 @@ class PrayerTimesWindow:
             bg=bg,
         ).pack(anchor="e")
 
+    def _build_first_run_state(self):
+        """Friendly empty state shown before any mosque is configured."""
+        import tkinter as tk
+
+        box = tk.Frame(self.win, bg=BG_COLOR)
+        box.pack(fill="both", expand=True, padx=24, pady=16)
+
+        tk.Label(
+            box, text="المُنادي", font=(FONT_FAMILY, 20),
+            fg=SHURUQ_ACCENT, bg=BG_COLOR,
+        ).pack(pady=(12, 2))
+        tk.Label(
+            box, text=t("first_run_title"), font=(FONT_FAMILY, 13, "bold"),
+            fg=TEXT_PRIMARY, bg=BG_COLOR,
+        ).pack(pady=(0, 6))
+        tk.Label(
+            box, text=t("first_run_body"), font=(FONT_FAMILY, 10),
+            fg=TEXT_SECONDARY, bg=BG_COLOR, wraplength=270, justify="center",
+        ).pack(pady=(0, 14))
+
+        cta = tk.Label(
+            box, text=t("find_mosque"), font=(FONT_FAMILY, 11, "bold"),
+            fg=ON_ACCENT, bg=ACCENT, padx=18, pady=8, cursor="hand2",
+        )
+        cta.pack()
+        cta.bind("<Button-1>", lambda e: self._on_settings())
+        cta.bind("<Enter>", lambda e: cta.configure(bg=ACCENT_HOVER))
+        cta.bind("<Leave>", lambda e: cta.configure(bg=ACCENT))
+
+    def _build_shuruq_row(self, name, time_str):
+        """Build the Shuruq row with a warm saffron/sunrise accent."""
+        import tkinter as tk
+
+        row = tk.Frame(self.win, bg=BG_COLOR, padx=16, pady=6)
+        row.pack(fill="x")
+
+        sun_dot = tk.Canvas(row, width=10, height=10, bg=BG_COLOR, highlightthickness=0)
+        sun_dot.create_oval(1, 1, 9, 9, fill=SHURUQ_ACCENT, outline="")
+        sun_dot.pack(side="left", padx=(0, 8))
+
+        tk.Label(
+            row, text=name, font=(FONT_FAMILY, 10),
+            fg=SHURUQ_ACCENT, bg=BG_COLOR, anchor="w",
+        ).pack(side="left")
+        tk.Label(
+            row, text=time_str, font=(FONT_FAMILY, 10, "bold"),
+            fg=SHURUQ_ACCENT, bg=BG_COLOR,
+        ).pack(side="right")
+
     def _build_simple_row(self, name, time_str):
         import tkinter as tk
 
@@ -526,13 +601,14 @@ class SettingsWindow:
 
         self.app = app
         self.win = tk.Tk()
-        self.win.title(f"{t('next_prayer')} — {t('settings')}")
+        self.win.title(f"{APP_NAME} — {t('settings')}")
         self.win.configure(bg=BG_COLOR)
         self.win.resizable(False, False)
 
         sw = self.win.winfo_screenwidth()
         sh = self.win.winfo_screenheight()
-        w, h = 520, 920
+        # Never grow taller than the screen; the content scrolls anyway.
+        w, h = 540, min(sh - 80, 800)
         self.win.geometry(f"{w}x{h}+{(sw - w) // 2}+{(sh - h) // 2}")
         self.win.protocol("WM_DELETE_WINDOW", self._close)
 
@@ -545,8 +621,8 @@ class SettingsWindow:
         style.configure("Dark.TEntry", fieldbackground=CARD_COLOR, foreground=TEXT_PRIMARY, insertcolor=TEXT_PRIMARY)
         style.configure("Dark.TButton", background=CARD_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 10), padding=(12, 6))
         style.map("Dark.TButton", background=[("active", CARD_HOVER)])
-        style.configure("Accent.TButton", background=ACCENT, foreground="#ffffff", font=(FONT_FAMILY, 10, "bold"), padding=(12, 6))
-        style.map("Accent.TButton", background=[("active", "#5aa0e9")])
+        style.configure("Accent.TButton", background=ACCENT, foreground=ON_ACCENT, font=(FONT_FAMILY, 10, "bold"), padding=(12, 6))
+        style.map("Accent.TButton", background=[("active", ACCENT_HOVER)])
         style.configure("Dark.TCheckbutton", background=BG_COLOR, foreground=TEXT_PRIMARY, font=(FONT_FAMILY, 10))
         style.configure("Treeview", background=CARD_COLOR, foreground=TEXT_PRIMARY, fieldbackground=CARD_COLOR, font=(FONT_FAMILY, 10), rowheight=30)
         style.configure("Treeview.Heading", background=BG_COLOR, foreground=TEXT_SECONDARY, font=(FONT_FAMILY, 9, "bold"))
@@ -743,6 +819,13 @@ class SettingsWindow:
 
         ttk.Button(adhan_path_frame, text=t("adhan_browse"), style="Dark.TButton", command=self._browse_adhan).pack(side="right", padx=(8, 0))
 
+        adhan_btn_frame = ttk.Frame(main, style="Dark.TFrame")
+        adhan_btn_frame.pack(fill="x", padx=inner_pad, pady=(4, 4))
+        ttk.Button(adhan_btn_frame, text=t("test_adhan"), style="Dark.TButton", command=self._test_adhan).pack(side="left")
+        ttk.Button(adhan_btn_frame, text=t("stop_adhan"), style="Dark.TButton", command=self._stop_adhan_clicked).pack(side="left", padx=(8, 0))
+        self._adhan_status_var = tk.StringVar(value="")
+        ttk.Label(adhan_btn_frame, textvariable=self._adhan_status_var, style="Dim.TLabel").pack(side="left", padx=(10, 0))
+
         # --- Display mode ---
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
         ttk.Label(main, text=t("display_mode"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
@@ -835,6 +918,7 @@ class SettingsWindow:
         # --- Manual offsets ---
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
         ttk.Label(main, text=t("manual_offsets"), style="Header.TLabel").pack(anchor="w", padx=inner_pad, pady=(0, 4))
+        ttk.Label(main, text=t("offsets_hint"), style="Dim.TLabel", wraplength=470, justify="left").pack(anchor="w", padx=inner_pad, pady=(0, 6))
 
         self._offset_vars = {}
         offsets = app.settings.get("prayer_offsets", default_prayer_offsets())
@@ -848,6 +932,8 @@ class SettingsWindow:
                 bg=CARD_COLOR, fg=TEXT_PRIMARY, buttonbackground=CARD_COLOR,
             ).pack(side="left")
             self._offset_vars[key] = var
+
+        ttk.Button(main, text=t("reset_offsets"), style="Dark.TButton", command=self._reset_offsets).pack(anchor="w", padx=inner_pad, pady=(6, 0))
 
         # --- Saved Mosques section ---
         tk.Frame(main, bg=TEXT_DIM, height=1).pack(fill="x", padx=inner_pad, pady=12)
@@ -891,9 +977,28 @@ class SettingsWindow:
         for item in self.results_tree.get_children():
             self.results_tree.delete(item)
         self.search_results = []
+        self.results_tree.insert("", "end", text=t("searching"), values=("",))
 
+        # Run the network search off the UI thread so the window stays responsive.
+        def worker():
+            try:
+                results = search_mosques(query)
+            except Exception:
+                results = None
+            try:
+                self.win.after(0, lambda: self._apply_search_results(results))
+            except Exception:
+                pass  # window was closed while searching
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _apply_search_results(self, results):
         try:
-            results = search_mosques(query)
+            for item in self.results_tree.get_children():
+                self.results_tree.delete(item)
+            if results is None:
+                self.results_tree.insert("", "end", text=t("search_failed"), values=("",))
+                return
             self.search_results = results
             if not results:
                 self.results_tree.insert("", "end", text=t("no_results"), values=("",))
@@ -903,8 +1008,8 @@ class SettingsWindow:
                 if len(loc) > 50:
                     loc = loc[:47] + "..."
                 self.results_tree.insert("", "end", text=m["name"], values=(loc,))
-        except Exception as e:
-            self.results_tree.insert("", "end", text=f"{t('search_failed')}: {e}", values=("",))
+        except Exception:
+            pass  # window was closed while searching
 
     def _on_result_select(self, event):
         sel = self.results_tree.selection()
@@ -957,6 +1062,21 @@ class SettingsWindow:
             self.adhan_path_var.set(path)
             self.app.settings["adhan_path"] = path
             save_settings(self.app.settings)
+
+    def _test_adhan(self):
+        path = self.adhan_path_var.get()
+        if not path or not os.path.isfile(path):
+            self._adhan_status_var.set(t("adhan_file_missing"))
+            return
+        self._adhan_status_var.set("")
+        _play_adhan(path)
+
+    def _stop_adhan_clicked(self):
+        _stop_adhan()
+
+    def _reset_offsets(self):
+        for var in self._offset_vars.values():
+            var.set(0)
 
     # --- Saved Mosques ---
 
@@ -1031,6 +1151,13 @@ class SettingsWindow:
         self.app.settings["notifications_enabled"] = self.notif_var.get()
         self.app.settings["dnd_bypass"] = self.dnd_bypass_var.get()
 
+        def safe_int(var, default=0):
+            # IntVar.get() raises TclError when the user typed junk in a Spinbox.
+            try:
+                return int(var.get())
+            except Exception:
+                return default
+
         notif_settings = {}
         for key, vars_dict in self._prayer_notif_vars.items():
             adhan_sel = vars_dict["adhan"].get()
@@ -1039,13 +1166,13 @@ class SettingsWindow:
             dnd_enabled = None if dnd_sel == "global" else dnd_sel == "on"
             notif_settings[key] = {
                 "enabled": vars_dict["enabled"].get(),
-                "reminder_minutes": vars_dict["reminder"].get(),
+                "reminder_minutes": safe_int(vars_dict["reminder"]),
                 "adhan_enabled": adhan_enabled,
                 "dnd_bypass": dnd_enabled,
             }
         self.app.settings["prayer_notification_settings"] = merge_prayer_notification_settings(notif_settings)
 
-        offsets = {key: var.get() for key, var in self._offset_vars.items()}
+        offsets = {key: safe_int(var) for key, var in self._offset_vars.items()}
         self.app.settings["prayer_offsets"] = merge_prayer_offsets(offsets)
 
         save_settings(self.app.settings)
@@ -1191,8 +1318,7 @@ class NextPrayerApp:
                 self.notification_timers.append(timer)
 
     def _fire_reminder_notification(self, name, minutes, bypass_dnd=False):
-        translated = _translate_prayer(name)
-        send_notification(name, f"{minutes}m", bypass_dnd=bypass_dnd)
+        send_reminder_notification(name, minutes, bypass_dnd=bypass_dnd)
 
     def _fire_notification(self, name, time_str, play_adhan=False, adhan_path="", bypass_dnd=False):
         if play_adhan and adhan_path and os.path.isfile(adhan_path):
@@ -1239,11 +1365,19 @@ class NextPrayerApp:
         display_names = self._display_names()
 
         items = []
-        items.append(pystray.MenuItem(
-            t("show_prayer_times"),
-            lambda: self.show_prayer_times(),
-            default=True,
-        ))
+        if not self.settings.get("mosque_url"):
+            # First run: the default action takes the user straight to setup.
+            items.append(pystray.MenuItem(
+                t("configure_mosque"),
+                lambda: self.show_settings(),
+                default=True,
+            ))
+        else:
+            items.append(pystray.MenuItem(
+                t("show_prayer_times"),
+                lambda: self.show_prayer_times(),
+                default=True,
+            ))
 
         if self.update_info:
             ver, url = self.update_info
@@ -1323,6 +1457,8 @@ class NextPrayerApp:
         self.refresh()
 
     def get_title(self):
+        if not self.settings.get("mosque_url"):
+            return t("set_mosque")
         display_times = self._display_times()
         if not display_times:
             return t("next_prayer")
@@ -1350,8 +1486,9 @@ class NextPrayerApp:
             data = fetch_times(url)
             self._apply_data(data)
             self.update_icon()
-        except Exception as e:
-            self.last_error = f"{t('fetch_error')}: {e}"
+        except Exception:
+            # Keep the UI message calm; details are intentionally not shown.
+            self.last_error = t("fetch_error")
             if not self.times:
                 self._load_cache()
             self.update_icon()
@@ -1361,6 +1498,9 @@ class NextPrayerApp:
             return
         display_times = self._display_times()
         if not display_times:
+            # First run / no data yet: keep the menu and title meaningful.
+            self.icon.title = self.get_title()
+            self.icon.menu = self.build_menu()
             return
 
         idx, _ = get_next_prayer(display_times)
@@ -1428,10 +1568,11 @@ class NextPrayerApp:
 
     def run(self):
         img = create_icon_image("Fajr")
+        initial_title = self.get_title() if not self.settings.get("mosque_url") else f"{t('next_prayer')} - {t('loading')}"
         self.icon = pystray.Icon(
             APP_NAME,
             img,
-            title=f"{t('next_prayer')} - {t('loading')}",
+            title=initial_title,
             menu=self.build_menu(),
         )
 

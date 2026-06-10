@@ -1,0 +1,49 @@
+{
+  "description": "Canonical Al Munadi translation key registry. Every user-facing string must use one of these keys on every platform (Python core TRANSLATIONS, GNOME translations/*.json, macOS Shared/Translations.swift). When adding a key: add English first, then nl/ar/fr/tr, then list it here. Keys must never be shown raw to users — missing translations fall back to English.",
+  "languages": ["en", "nl", "ar", "fr", "tr"],
+  "keys": {
+    "prayers": [
+      "prayer_fajr", "prayer_dhuhr", "prayer_asr", "prayer_maghrib", "prayer_isha",
+      "prayer_shuruq", "prayer_jumuah", "prayer_jumuah2"
+    ],
+    "states": [
+      "next_prayer", "loading", "no_mosque", "no_data", "no_prayer_times",
+      "cached_data", "fetch_error", "update_available", "since_last_prayer", "now",
+      "first_run_title", "first_run_body", "set_mosque", "searching"
+    ],
+    "actions": [
+      "refresh", "settings", "quit", "search", "save", "retry",
+      "configure_mosque", "show_prayer_times", "add_mosque", "remove_mosque",
+      "switch_mosque", "test_adhan", "stop_adhan", "reset_offsets", "adhan_browse"
+    ],
+    "mosque_setup": [
+      "mosque_url", "find_mosque", "search_hint", "no_results", "search_failed",
+      "paste_url", "paste_url_hint", "connected_mosque", "mosques", "saved_mosques", "active"
+    ],
+    "notifications": [
+      "notifications", "notification_title", "notification_body", "reminder_body",
+      "per_prayer_notifications", "prayer_reminder", "dnd_bypass", "dnd_bypass_per_prayer"
+    ],
+    "adhan": [
+      "adhan", "adhan_enabled", "adhan_path", "adhan_per_prayer", "adhan_file_missing"
+    ],
+    "display": [
+      "display_mode", "display_mode_countdown", "display_mode_time", "display_mode_name",
+      "display_mode_compact", "display_mode_icon", "display_mode_since",
+      "countdown_format", "countdown_compact", "countdown_full", "language"
+    ],
+    "adjustments": [
+      "manual_offsets", "prayer_offset", "offsets_hint"
+    ],
+    "metadata": [
+      "hijri_date", "qibla", "iqama"
+    ],
+    "app": [
+      "launch_at_login"
+    ]
+  },
+  "todo": [
+    "retry is registered but not yet wired into the Python tray apps (search error currently asks the user to search again).",
+    "GNOME translations/*.json and macOS Translations.swift do not yet include the first-run/test-adhan/reset-offsets keys added in Python core; add them when those UIs adopt the new flows."
+  ]
+}

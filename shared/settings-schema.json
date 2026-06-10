@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Al Munadi settings",
+  "description": "Canonical shape of persisted user settings. Every platform must read/write a compatible structure (GNOME maps these onto GSettings keys, macOS onto UserDefaults). Loaders must normalize unknown or invalid values to the defaults instead of crashing.",
+  "type": "object",
+  "properties": {
+    "mosque_url": {
+      "type": "string",
+      "description": "Canonical Mawaqit mosque page URL, e.g. https://mawaqit.net/en/w/<slug>. Empty string means no mosque configured (first-run state).",
+      "default": ""
+    },
+    "notifications_enabled": { "type": "boolean", "default": true },
+    "language": {
+      "type": "string",
+      "enum": ["en", "nl", "ar", "fr", "tr"],
+      "default": "en",
+      "description": "Unknown values fall back to en."
+    },
+    "adhan_enabled": { "type": "boolean", "default": false },
+    "adhan_path": {
+      "type": "string",
+      "default": "",
+      "description": "Absolute path to a user-provided audio file. Apps never bundle adhan audio. Validate existence before playback; show adhan_file_missing if absent."
+    },
+    "display_mode": {
+      "type": "string",
+      "enum": ["countdown", "since", "time", "name", "compact", "icon"],
+      "default": "countdown"
+    },
+    "countdown_format": {
+      "type": "string",
+      "enum": ["compact", "full"],
+      "default": "compact"
+    },
+    "dnd_bypass": {
+      "type": "boolean",
+      "default": true,
+      "description": "Global Do Not Disturb / Focus bypass. Platform-dependent best effort: Windows alarm-scenario toast, Linux urgency=critical, GNOME urgency, macOS currently NOT bypassing (time-sensitive entitlement disabled)."
+    },
+    "saved_mosques": {
+      "type": "array",
+      "default": [],
+      "description": "Normalization drops entries without a url and removes duplicate urls (first occurrence wins).",
+      "items": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string" },
+          "name": { "type": "string", "default": "" }
+        }
+      }
+    },
+    "prayer_notification_settings": {
+      "type": "object",
+      "description": "Keys: Fajr, Dhuhr, Asr, Maghrib, Isha, Jumuah. Missing keys are filled with defaults.",
+      "propertyNames": { "enum": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha", "Jumuah"] },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean", "default": true },
+          "reminder_minutes": {
+            "type": "integer", "minimum": 0, "maximum": 120, "default": 0,
+            "description": "Minutes before the prayer to fire a reminder. 0 disables the reminder. Invalid values normalize to 0."
+          },
+          "adhan_enabled": {
+            "type": ["boolean", "null"], "default": null,
+            "description": "Per-prayer override: true=always, false=never, null=follow global adhan_enabled."
+          },
+          "dnd_bypass": {
+            "type": ["boolean", "null"], "default": null,
+            "description": "Per-prayer override: true/false, null=follow global dnd_bypass."
+          }
+        }
+      }
+    },
+    "prayer_offsets": {
+      "type": "object",
+      "description": "Manual per-prayer corrections in minutes, clamped to [-60, 60]. Keys: Fajr, Dhuhr, Asr, Maghrib, Isha. Invalid values normalize to 0.",
+      "propertyNames": { "enum": ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] },
+      "additionalProperties": { "type": "integer", "minimum": -60, "maximum": 60, "default": 0 }
+    }
+  }
+}

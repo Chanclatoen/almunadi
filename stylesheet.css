@@ -75,22 +75,23 @@
 }
 
 /* ===== Active prayer (next prayer) ===== */
+/* Al Munadi emerald — matches the brand color used on the website and apps. */
 
 .next-prayer-menu-active {
-    background-color: rgba(120, 174, 237, 0.12);
+    background-color: rgba(70, 199, 158, 0.12);
     border-radius: 8px;
-    border-left: 3px solid rgba(120, 174, 237, 0.8);
+    border-left: 3px solid rgba(70, 199, 158, 0.8);
     transition-duration: 200ms;
 }
 
 .next-prayer-menu-active .next-prayer-menu-time {
-    color: #78aeed;
+    color: #46c79e;
     font-weight: bold;
 }
 
 .next-prayer-menu-active .next-prayer-menu-iqama {
-    color: rgba(120, 174, 237, 0.65);
-    background-color: rgba(120, 174, 237, 0.08);
+    color: rgba(70, 199, 158, 0.65);
+    background-color: rgba(70, 199, 158, 0.08);
 }
 
 /* ===== Past prayer (dimmed) ===== */
@@ -110,10 +111,11 @@
 }
 
 /* ===== Error state ===== */
+/* Calm saffron, consistent with the Al Munadi accent palette. */
 
 .next-prayer-error {
-    color: #f5c542;
-    background-color: rgba(245, 197, 66, 0.08);
+    color: #e3b15a;
+    background-color: rgba(227, 177, 90, 0.08);
     border-radius: 6px;
     padding: 6px 12px;
 }

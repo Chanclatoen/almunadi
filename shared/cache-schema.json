@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Al Munadi offline cache",
+  "description": "Shape of the cached last-successful fetch. Written after every successful fetch; read when the network is unavailable. Loaders must treat a missing or malformed cache as 'no cache' (never crash). A cache without 'times' is invalid.",
+  "type": "object",
+  "required": ["times"],
+  "properties": {
+    "times": {
+      "type": "array",
+      "description": "Five prayer times as HH:MM strings, in order: Fajr, Dhuhr, Asr, Maghrib, Isha. These are the raw mosque times; manual offsets are applied at display time, never persisted into the cache.",
+      "items": { "type": "string", "pattern": "^\\d{1,2}:\\d{2}$" },
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "shuruq": { "type": ["string", "null"], "description": "Sunrise time HH:MM, if provided." },
+    "name": { "type": "string", "description": "Mosque display name." },
+    "iqama": {
+      "type": ["array", "null"],
+      "description": "Raw iqama values per prayer as Mawaqit provides them: either an absolute HH:MM or a +N minutes offset string.",
+      "items": { "type": ["string", "null"] }
+    },
+    "iqama_enabled": { "type": "boolean", "default": false },
+    "jumua": { "type": ["string", "null"], "description": "Jumuah time HH:MM. On Fridays it replaces Dhuhr in display and notifications." },
+    "jumua2": { "type": ["string", "null"], "description": "Second Jumuah time, shown separately on Fridays when present." },
+    "hijri_date": { "type": ["string", "null"], "description": "Preformatted Hijri date, e.g. '24 Dhu al-Hijjah 1447 AH'." },
+    "qibla_direction": { "type": ["string", "null"], "description": "Preformatted bearing, e.g. '125°'." },
+    "date": { "type": "string", "description": "ISO date (YYYY-MM-DD) on which the cache was written." }
+  }
+}

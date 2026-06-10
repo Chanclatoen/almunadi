@@ -1,6 +1,7 @@
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
 from unittest.mock import MagicMock
 
 # Allow importing al_munadi on non-Windows platforms for unit tests
@@ -260,6 +261,102 @@ class TestIslamicMetadata:
 
     def test_hijri_date_format(self):
         assert format_hijri_date(datetime(2026, 6, 8), adjustment=0).endswith("AH")
+
+
+SHARED_FIXTURES = json.loads(
+    (Path(__file__).resolve().parent.parent / "shared" / "fixtures" / "behavior-fixtures.json").read_text()
+)
+
+
+class TestSharedFixtures:
+    """Cross-platform fixtures, also asserted by tests/test_utils.js (GNOME)."""
+
+    @patch("core.al_munadi_core.datetime")
+    def test_countdown(self, mock_dt):
+        now = datetime(2026, 6, 8, 10, 0, 0)
+        mock_dt.now.return_value = now
+        for fmt in ("compact", "full"):
+            for case in SHARED_FIXTURES["countdown"][fmt]:
+                target = now + timedelta(minutes=case["remaining_minutes"])
+                assert format_countdown(target, {"countdown_format": fmt}) == case["expected"]
+
+    @patch("core.al_munadi_core.datetime")
+    def test_elapsed_since(self, mock_dt):
+        now = datetime(2026, 6, 8, 10, 0, 0)
+        mock_dt.now.return_value = now
+        for fmt in ("compact", "full"):
+            for case in SHARED_FIXTURES["elapsed_since"][fmt]:
+                target = now - timedelta(minutes=case["elapsed_minutes"])
+                assert format_elapsed_since(target, {"countdown_format": fmt}) == case["expected"]
+
+    def test_tray_title(self):
+        for case in SHARED_FIXTURES["tray_title"]:
+            result = format_tray_title(case["name"], case["time"], case["countdown"], case["mode"])
+            assert result == case["expected"], f"mode {case['mode']}"
+
+    def test_iqama(self):
+        for case in SHARED_FIXTURES["iqama"]:
+            assert resolve_iqama(case["prayer_time"], case["iqama"]) == case["expected"]
+
+    def test_prayer_offsets(self):
+        apply_case = SHARED_FIXTURES["prayer_offsets"]["apply"]
+        assert apply_prayer_offsets(apply_case["times"], apply_case["offsets"]) == apply_case["expected"]
+        for case in SHARED_FIXTURES["prayer_offsets"]["clamp"]:
+            assert merge_prayer_offsets({"Fajr": case["input"]})["Fajr"] == case["expected"]
+
+    def test_jumuah_notification_key(self):
+        for case in SHARED_FIXTURES["jumuah_notification_key"]:
+            assert notification_key_for_index(case["index"], case["is_friday"], case["has_jumua"]) == case["expected"]
+
+    def test_version_compare(self):
+        from core.al_munadi_core import is_newer_version
+
+        for case in SHARED_FIXTURES["version_compare"]:
+            assert is_newer_version(case["current"], case["latest"]) is case["is_newer"], case
+
+    def test_slug_extraction(self):
+        for case in SHARED_FIXTURES["slug_extraction"]:
+            assert extract_slug(case["input"]) == case["expected"]
+
+
+class TestSettingsNormalization:
+    def test_invalid_values_fall_back_to_defaults(self):
+        from core.al_munadi_core import normalize_settings
+
+        settings = normalize_settings({
+            "display_mode": "bogus",
+            "countdown_format": 7,
+            "language": "xx",
+            "saved_mosques": [{"url": "u1", "name": "A"}, {"url": "u1"}, "junk", {"name": "no-url"}],
+            "prayer_offsets": {"Fajr": "junk", "Isha": -90},
+            "prayer_notification_settings": {"Asr": {"reminder_minutes": "x", "adhan_enabled": "yes"}},
+        })
+        assert settings["display_mode"] == "countdown"
+        assert settings["countdown_format"] == "compact"
+        assert settings["language"] == "en"
+        assert settings["saved_mosques"] == [{"url": "u1", "name": "A"}]
+        assert settings["prayer_offsets"]["Fajr"] == 0
+        assert settings["prayer_offsets"]["Isha"] == -60
+        assert settings["prayer_notification_settings"]["Asr"]["reminder_minutes"] == 0
+        assert settings["prayer_notification_settings"]["Asr"]["adhan_enabled"] is None
+
+    def test_non_dict_input(self):
+        from core.al_munadi_core import normalize_settings
+
+        settings = normalize_settings(None)
+        assert settings["mosque_url"] == ""
+        assert settings["prayer_offsets"]["Fajr"] == 0
+
+    def test_reminder_minutes_clamped(self):
+        merged = merge_prayer_notification_settings({"Fajr": {"reminder_minutes": 999}})
+        assert merged["Fajr"]["reminder_minutes"] == 120
+
+    def test_version_tuple_tolerates_suffixes(self):
+        from core.al_munadi_core import version_tuple
+
+        assert version_tuple("1.2.3-beta") == (1, 2, 3)
+        assert version_tuple("") == (0,)
+        assert version_tuple("garbage") == (0,)
 
 
 class TestResolveIqama:
