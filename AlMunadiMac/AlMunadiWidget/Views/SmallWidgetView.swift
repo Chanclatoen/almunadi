@@ -31,11 +31,22 @@ struct SmallWidgetView: View {
             }
 
             Spacer(minLength: 0)
-            Text(entry.mosqueName)
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+            if entry.isStale {
+                HStack(spacing: 3) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 8))
+                    Text(t("cached_data"))
+                        .font(.system(size: 9))
+                }
+                .foregroundStyle(Brand.saffron)
                 .lineLimit(1)
-                .truncationMode(.tail)
+            } else {
+                Text(entry.mosqueName)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }

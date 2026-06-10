@@ -12,6 +12,17 @@ struct MediumWidgetView: View {
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
 
+                if entry.isStale {
+                    HStack(spacing: 3) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 8))
+                        Text(t("cached_data"))
+                            .font(.system(size: 9))
+                    }
+                    .foregroundStyle(Brand.saffron)
+                    .lineLimit(1)
+                }
+
                 Text(entry.nextPrayer?.displayName ?? t("next_prayer"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)

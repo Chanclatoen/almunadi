@@ -166,7 +166,11 @@ class PrayerService: ObservableObject {
         language = lang
         // Re-apply display names for current prayers
         updateDisplayNames()
-        if let data = cachedMawaqitData { pushWidgetSnapshot(data) }
+        if let data = cachedMawaqitData {
+            pushWidgetSnapshot(data)
+        } else {
+            WidgetSharedStore.saveLanguage(lang)
+        }
     }
 
     private func updateDisplayNames() {

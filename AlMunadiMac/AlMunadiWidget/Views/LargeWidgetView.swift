@@ -15,6 +15,16 @@ struct LargeWidgetView: View {
                     Text(entry.nextPrayer?.displayName ?? t("next_prayer"))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+                    if entry.isStale {
+                        HStack(spacing: 3) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 8))
+                            Text(t("cached_data"))
+                                .font(.system(size: 9))
+                        }
+                        .foregroundStyle(Brand.saffron)
+                        .lineLimit(1)
+                    }
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {

@@ -56,6 +56,21 @@ enum WidgetSharedStore {
         #endif
     }
 
+    /// Persist just the language so the widget's setup state is localized
+    /// even before any mosque is configured (no snapshot exists yet).
+    static func saveLanguage(_ language: String) {
+        guard let defaults else { return }
+        defaults.set(language, forKey: Key.language)
+
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
+    }
+
+    static var storedLanguage: String {
+        defaults?.string(forKey: Key.language) ?? "en"
+    }
+
     static func loadSnapshot() -> Snapshot? {
         guard let defaults,
               let blob = defaults.data(forKey: Key.snapshot),

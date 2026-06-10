@@ -13,6 +13,8 @@ struct AlMunadiEntry: TimelineEntry {
     let language: String
     let countdownFormat: String
     let isPlaceholder: Bool
+    var needsSetup: Bool = false
+    var isStale: Bool = false
 }
 
 struct AlMunadiProvider: TimelineProvider {
@@ -21,13 +23,16 @@ struct AlMunadiProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (AlMunadiEntry) -> Void) {
-        completion(makeEntry(for: Date()) ?? .placeholder)
+        completion(makeEntry(for: Date()) ?? (context.isPreview ? .placeholder : .setup(at: Date())))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<AlMunadiEntry>) -> Void) {
         let now = Date()
         guard let snapshot = WidgetSharedStore.loadSnapshot() else {
-            completion(Timeline(entries: [.placeholder], policy: .after(now.addingTimeInterval(15 * 60))))
+            // No mosque configured yet: show the localized setup state for
+            // real widgets (sample data only in the gallery preview).
+            let entry: AlMunadiEntry = context.isPreview ? .placeholder : .setup(at: now)
+            completion(Timeline(entries: [entry], policy: .after(now.addingTimeInterval(15 * 60))))
             return
         }
 
@@ -76,8 +81,17 @@ struct AlMunadiProvider: TimelineProvider {
             qiblaDirection: snapshot.data.qiblaDirection,
             language: snapshot.language,
             countdownFormat: snapshot.countdownFormat,
-            isPlaceholder: false
+            isPlaceholder: false,
+            isStale: Self.isStale(snapshot.data.cacheDate, at: date)
         )
+    }
+
+    /// Cached times from a previous day are shown with the cached hint.
+    private static func isStale(_ cacheDate: String?, at date: Date) -> Bool {
+        guard let cacheDate else { return false }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return cacheDate != formatter.string(from: date)
     }
 }
 
@@ -108,6 +122,24 @@ extension AlMunadiEntry {
             isPlaceholder: true
         )
     }
+
+    /// Shown when no mosque has been configured in the app yet.
+    static func setup(at date: Date) -> AlMunadiEntry {
+        AlMunadiEntry(
+            date: date,
+            prayers: [],
+            nextPrayer: nil,
+            lastPrayer: nil,
+            mosqueName: "",
+            shuruq: nil,
+            hijriDate: nil,
+            qiblaDirection: nil,
+            language: WidgetSharedStore.storedLanguage,
+            countdownFormat: "compact",
+            isPlaceholder: false,
+            needsSetup: true
+        )
+    }
 }
 
 struct AlMunadiWidget: Widget {
@@ -116,6 +148,7 @@ struct AlMunadiWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: AlMunadiProvider()) { entry in
             AlMunadiWidgetEntryView(entry: entry)
+                .tint(Brand.accent)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Al Munadi")
@@ -134,11 +167,45 @@ struct AlMunadiWidgetEntryView: View {
     }
 
     var body: some View {
-        switch family {
-        case .systemSmall: SmallWidgetView(entry: entry)
-        case .systemMedium: MediumWidgetView(entry: entry)
-        case .systemLarge: LargeWidgetView(entry: entry)
-        default: SmallWidgetView(entry: entry)
+        if entry.needsSetup {
+            WidgetSetupView(showsBody: family != .systemSmall)
+        } else {
+            switch family {
+            case .systemSmall: SmallWidgetView(entry: entry)
+            case .systemMedium: MediumWidgetView(entry: entry)
+            case .systemLarge: LargeWidgetView(entry: entry)
+            default: SmallWidgetView(entry: entry)
+            }
         }
+    }
+}
+
+/// Localized no-mosque state — never a blank widget.
+struct WidgetSetupView: View {
+    let showsBody: Bool
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "moon.stars.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(Brand.accent)
+
+            Text(t("set_mosque"))
+                .font(.caption.weight(.semibold))
+                .multilineTextAlignment(.center)
+
+            if showsBody {
+                Text(t("first_run_body"))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+            }
+
+            Text("Al Munadi")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
