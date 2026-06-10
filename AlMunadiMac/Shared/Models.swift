@@ -48,41 +48,11 @@ struct PrayerTime: Identifiable {
         let remaining = Int(interval / 60)
         let elapsed = Int(-interval / 60)
         if displayMode == "since" {
-            let value = Self.formatDuration(minutes: max(0, elapsed), prefix: "+", countdownFormat: countdownFormat)
-            return "\(String(format: t("since_last_prayer"), displayName)) \(value)"
+            let value = BehaviorFormatting.formatElapsed(elapsedMinutes: max(0, elapsed), format: countdownFormat)
+            return "\(String(format: t("since_last_prayer"), displayName))  \(value)"
         }
-        if remaining <= 0 {
-            if displayMode == "icon" { return "" }
-            if displayMode == "name" { return displayName }
-            return "\(displayName) \(t("now"))"
-        }
-
-        let countdown = Self.formatDuration(minutes: remaining, prefix: "-", countdownFormat: countdownFormat)
-
-        switch displayMode {
-        case "time":
-            return "\(displayName) \(time)"
-        case "name":
-            return displayName
-        case "compact":
-            return "\(displayName) \(countdown)"
-        case "icon":
-            return ""
-        default:
-            return "\(displayName) \(time) \(countdown)"
-        }
-    }
-
-    private static func formatDuration(minutes: Int, prefix: String, countdownFormat: String) -> String {
-        let h = minutes / 60
-        let m = minutes % 60
-        if h > 0 {
-            if countdownFormat == "full" {
-                return "\(prefix)\(h)h \(String(format: "%02d", m))m"
-            }
-            return "\(prefix)\(h)h\(String(format: "%02d", m))m"
-        }
-        return "\(prefix)\(m)m"
+        let countdown = BehaviorFormatting.formatCountdown(remainingMinutes: remaining, format: countdownFormat)
+        return BehaviorFormatting.formatTrayTitle(mode: displayMode, name: displayName, time: time, countdown: countdown)
     }
 }
 
@@ -140,7 +110,8 @@ enum PrayerSettingsDefaults {
                 merged[key] = PrayerNotificationSetting(
                     enabled: entry.enabled,
                     reminderMinutes: max(0, entry.reminderMinutes),
-                    adhanEnabled: entry.adhanEnabled
+                    adhanEnabled: entry.adhanEnabled,
+                    dndBypass: entry.dndBypass
                 )
             }
         }

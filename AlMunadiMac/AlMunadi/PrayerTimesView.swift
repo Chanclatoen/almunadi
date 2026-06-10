@@ -294,14 +294,6 @@ struct PrayerRow: View {
     private var countdown: String {
         let remaining = Int(prayer.date.timeIntervalSinceNow / 60)
         guard remaining > 0 else { return "" }
-        let h = remaining / 60
-        let m = remaining % 60
-        if h > 0 {
-            if countdownFormat == "full" {
-                return "-\(h)h \(String(format: "%02d", m))m"
-            }
-            return "-\(h)h\(String(format: "%02d", m))m"
-        }
-        return "-\(m)m"
+        return BehaviorFormatting.formatCountdown(remainingMinutes: remaining, format: countdownFormat)
     }
 }

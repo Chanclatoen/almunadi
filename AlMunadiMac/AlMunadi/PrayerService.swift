@@ -245,18 +245,7 @@ class PrayerService: ObservableObject {
                 else { continue }
 
                 let latest = String(tag.dropFirst(Self.tagPrefix.count))
-                let currentParts = Self.appVersion.split(separator: ".").compactMap { Int($0) }
-                let latestParts = latest.split(separator: ".").compactMap { Int($0) }
-
-                var newer = false
-                for i in 0..<max(currentParts.count, latestParts.count) {
-                    let c = i < currentParts.count ? currentParts[i] : 0
-                    let l = i < latestParts.count ? latestParts[i] : 0
-                    if l > c { newer = true; break }
-                    if l < c { break }
-                }
-
-                if newer {
+                if VersionCompare.isNewer(current: Self.appVersion, latest: latest) {
                     let htmlUrl = (release["html_url"] as? String) ?? Self.repoReleasesPage
                     DispatchQueue.main.async {
                         self.updateInfo = (version: latest, url: htmlUrl)
@@ -281,7 +270,7 @@ class PrayerService: ObservableObject {
             return
         }
 
-        if let slug = extractSlug(from: urlString) {
+        if let slug = MawaqitURL.extractSlug(from: urlString) {
             fetchTimesApi(slug: slug) { [weak self] success in
                 if !success {
                     self?.fetchTimesHtml(urlString: urlString)
@@ -349,7 +338,7 @@ class PrayerService: ObservableObject {
     private func fetchTimesHtml(urlString: String) {
         var fetchUrl = urlString
         if !fetchUrl.contains("/w/") {
-            if let slug = extractSlug(from: fetchUrl) {
+            if let slug = MawaqitURL.extractSlug(from: fetchUrl) {
                 fetchUrl = "https://mawaqit.net/en/w/\(slug)"
             }
         }
@@ -430,15 +419,6 @@ class PrayerService: ObservableObject {
     func selectMosque(_ mosque: MosqueSearchResult) {
         mosqueUrl = "https://mawaqit.net/en/w/\(mosque.slug)"
         searchResults = []
-    }
-
-    private func extractSlug(from url: String) -> String? {
-        let pattern = #"mawaqit\.net/\w+/(?:w/)?(.+?)/?$"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: url, range: NSRange(url.startIndex..., in: url)),
-              let range = Range(match.range(at: 1), in: url)
-        else { return nil }
-        return String(url[range])
     }
 
     private func parseConfData(_ html: String) -> MawaqitData? {
