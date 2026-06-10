@@ -56,6 +56,26 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
 
+  AlMunadiTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Shared
+        excludes:
+          - "WidgetSharedStore.swift"
+      - path: AlMunadiTests
+      - path: ../shared/fixtures/behavior-fixtures.json
+        buildPhase: resources
+        group: AlMunadiTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.almunadi.AlMunadiTests
+        PRODUCT_NAME: AlMunadiTests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+
 schemes:
   AlMunadi:
     build:
@@ -64,5 +84,9 @@ schemes:
         AlMunadiWidget: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - AlMunadiTests
     archive:
       config: Release
