@@ -6,9 +6,16 @@ struct SettingsView: View {
     @State private var urlText: String = ""
     @State private var searchQuery: String = ""
     @State private var adhanPathText: String = ""
+    @State private var urlInvalid: Bool = false
+
+    private var appVersion: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? PrayerService.appVersion
+    }
 
     var body: some View {
         Form {
+            // MARK: - 1. Mosque
+
             Section(t("find_mosque")) {
                 HStack {
                     TextField(t("search_placeholder"), text: $searchQuery)
@@ -20,8 +27,12 @@ struct SettingsView: View {
                 }
 
                 if service.isSearching {
-                    ProgressView()
-                        .controlSize(.small)
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(t("searching"))
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 if !service.searchResults.isEmpty {
@@ -53,8 +64,22 @@ struct SettingsView: View {
                         urlText = service.mosqueUrl
                         adhanPathText = service.adhanPath
                     }
+                    .onChange(of: urlText) { _, _ in
+                        urlInvalid = false
+                    }
+
+                if urlInvalid {
+                    Text(t("invalid_mawaqit_url"))
+                        .font(.caption)
+                        .foregroundStyle(Brand.errorText)
+                }
 
                 Button(t("save")) {
+                    guard MawaqitURL.extractSlug(from: urlText) != nil else {
+                        urlInvalid = true
+                        return
+                    }
+                    urlInvalid = false
                     service.mosqueUrl = urlText
                 }
                 .disabled(urlText == service.mosqueUrl)
@@ -70,8 +95,6 @@ struct SettingsView: View {
                     LabeledContent(t("name"), value: service.mosqueName)
                 }
             }
-
-            // MARK: - Saved Mosques
 
             Section(t("saved_mosques")) {
                 if service.savedMosques.isEmpty {
@@ -116,19 +139,15 @@ struct SettingsView: View {
                 }
             }
 
-            // MARK: - Language
+            // MARK: - 2. Display
 
-            Section(t("language")) {
+            Section(t("display")) {
                 Picker(t("language"), selection: languageBinding) {
                     ForEach(Translations.supportedLanguages, id: \.code) { lang in
                         Text(lang.label).tag(lang.code)
                     }
                 }
-            }
 
-            // MARK: - Display Mode
-
-            Section(t("display_mode")) {
                 Picker(t("display_mode"), selection: displayModeBinding) {
                     Text(t("display_countdown")).tag("countdown")
                     Text(t("display_since")).tag("since")
@@ -138,11 +157,7 @@ struct SettingsView: View {
                     Text(t("display_icon")).tag("icon")
                 }
                 .pickerStyle(.radioGroup)
-            }
 
-            // MARK: - Countdown Format
-
-            Section(t("countdown_format")) {
                 Picker(t("countdown_format"), selection: countdownBinding) {
                     Text(t("compact")).tag("compact")
                     Text(t("full")).tag("full")
@@ -150,11 +165,14 @@ struct SettingsView: View {
                 .pickerStyle(.radioGroup)
             }
 
-            // MARK: - Per-Prayer Notifications
+            // MARK: - 3. Notifications
 
-            Section(t("per_prayer_notifications")) {
+            Section {
+                Toggle(t("prayer_notifications"), isOn: notificationsBinding)
+                Toggle(t("dnd_bypass"), isOn: dndBypassBinding)
+
                 ForEach(PrayerSettingsDefaults.notificationKeys, id: \.self) { key in
-                    DisclosureGroup(key) {
+                    DisclosureGroup(t(key.lowercased())) {
                         Toggle(t("prayer_notifications"), isOn: prayerNotifEnabledBinding(for: key))
                         Stepper(
                             "\(t("prayer_reminder")): \(prayerNotifReminder(for: key))",
@@ -173,28 +191,20 @@ struct SettingsView: View {
                         }
                     }
                 }
-            }
 
-            // MARK: - Manual Offsets
-
-            Section(t("manual_offsets")) {
-                ForEach(PrayerSettingsDefaults.offsetKeys, id: \.self) { key in
-                    Stepper(
-                        "\(key) \(t("prayer_offset")): \(service.prayerOffsets[key] ?? 0)",
-                        value: prayerOffsetBinding(for: key),
-                        in: -60...60
-                    )
+                Button(t("test_notification")) {
+                    service.sendTestNotification()
                 }
+            } header: {
+                Text(t("notifications"))
+            } footer: {
+                // DND honesty: Focus bypass is not guaranteed on macOS (the
+                // time-sensitive entitlement is disabled — see README).
+                Text(t("dnd_platform_note"))
+                    .foregroundStyle(.secondary)
             }
 
-            // MARK: - Notifications
-
-            Section(t("notifications")) {
-                Toggle(t("prayer_notifications"), isOn: notificationsBinding)
-                Toggle(t("dnd_bypass"), isOn: dndBypassBinding)
-            }
-
-            // MARK: - Adhan
+            // MARK: - 4. Adhan
 
             Section(t("adhan")) {
                 Toggle(t("enable_adhan"), isOn: adhanEnabledBinding)
@@ -209,11 +219,55 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(!service.adhanEnabled)
+
+                if service.adhanFileMissing {
+                    Text(t("adhan_file_missing"))
+                        .font(.caption)
+                        .foregroundStyle(Brand.errorText)
+                }
+
+                HStack {
+                    Button(t("test_adhan")) {
+                        service.testAdhan()
+                    }
+                    Button(t("stop_adhan")) {
+                        service.stopAdhan()
+                    }
+                }
             }
 
-            // MARK: - Launch at Login
+            // MARK: - 5. Prayer adjustments
 
             Section {
+                ForEach(PrayerSettingsDefaults.offsetKeys, id: \.self) { key in
+                    Stepper(
+                        "\(t(key.lowercased())) \(t("prayer_offset")): \(service.prayerOffsets[key] ?? 0)",
+                        value: prayerOffsetBinding(for: key),
+                        in: -60...60
+                    )
+                }
+
+                Button(t("reset_offsets")) {
+                    service.resetOffsets()
+                }
+            } header: {
+                Text(t("manual_offsets"))
+            } footer: {
+                Text(t("offsets_hint"))
+                    .foregroundStyle(.secondary)
+            }
+
+            // MARK: - 6. App
+
+            Section(t("app")) {
+                LabeledContent(t("app_version"), value: appVersion)
+
+                Button(t("open_releases")) {
+                    if let url = URL(string: PrayerService.repoReleasesPage) {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+
                 Toggle(t("launch_at_login"), isOn: launchAtLoginBinding)
             }
         }

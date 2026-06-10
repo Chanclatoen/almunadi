@@ -7,7 +7,7 @@ class PrayerService: ObservableObject {
     static let appVersion = "1.0.8"
     static let tagPrefix = "v"
     private static let releasesURL = "https://api.github.com/repos/Chanclatoen/almunadi/releases"
-    private static let repoReleasesPage = "https://github.com/Chanclatoen/almunadi/releases"
+    static let repoReleasesPage = "https://github.com/Chanclatoen/almunadi/releases"
 
     @Published var prayers: [PrayerTime] = []
     @Published var shuruq: String?
@@ -22,6 +22,7 @@ class PrayerService: ObservableObject {
     @Published var searchResults: [MosqueSearchResult] = []
     @Published var isSearching: Bool = false
     @Published var savedMosques: [SavedMosque] = []
+    @Published var adhanFileMissing: Bool = false
     @Published var language: String = UserDefaults.standard.string(forKey: "language") ?? "en"
     @Published var updateInfo: (version: String, url: String)?
 
@@ -60,7 +61,10 @@ class PrayerService: ObservableObject {
 
     var adhanPath: String {
         get { UserDefaults.standard.string(forKey: "adhanPath") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "adhanPath") }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "adhanPath")
+            adhanFileMissing = false
+        }
     }
 
     var countdownFormat: String {
@@ -215,17 +219,55 @@ class PrayerService: ObservableObject {
 
     private func playAdhan(force: Bool = false) {
         guard force || adhanEnabled else { return }
-        let path = adhanPath
-        guard !path.isEmpty else { return }
-        let fileURL = URL(fileURLWithPath: path)
-        guard FileManager.default.fileExists(atPath: path) else { return }
+        startAdhanPlayback()
+    }
 
+    /// Plays the configured adhan file, stopping any playback already in
+    /// progress (never overlap, spec §6). Flags `adhanFileMissing` when the
+    /// configured path does not resolve to a file.
+    @discardableResult
+    private func startAdhanPlayback() -> Bool {
+        stopAdhan()
+        let path = adhanPath
+        guard !path.isEmpty, FileManager.default.fileExists(atPath: path) else {
+            adhanFileMissing = true
+            return false
+        }
+        adhanFileMissing = false
         do {
-            audioPlayer = try AVAudioPlayer(contentsOf: fileURL)
+            audioPlayer = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: path))
             audioPlayer?.play()
+            return true
         } catch {
             print("Adhan playback error: \(error)")
+            return false
         }
+    }
+
+    func testAdhan() {
+        startAdhanPlayback()
+    }
+
+    func stopAdhan() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+    }
+
+    func resetOffsets() {
+        prayerOffsets = PrayerSettingsDefaults.defaultOffsets()
+    }
+
+    func sendTestNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Al Munadi"
+        content.body = t("test_notification")
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: "test-notification",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
     }
 
     // MARK: - Update Check
